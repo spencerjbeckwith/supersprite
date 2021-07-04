@@ -1,9 +1,5 @@
 /** Each matrix's value array is nine values, forming a 3x3 matrix. */
-interface M3 {
-    length: 9;
-    [index: number]: number;
-    0: number;
-}
+type M3 = [ number, number, number, number, number, number, number, number, number ];
 
 /** Allows for transformations by chaining different functions onto existing Matrices. */
 class Matrix {
@@ -15,6 +11,10 @@ class Matrix {
 
     /** Returns a new projection Matrix based on the provided view dimensions. Should only be called when the view size changes. */
     static projection: (viewWidth: number, viewHeight: number) => Matrix;
+
+    copy(): Matrix {
+        return new Matrix([...this.values]);
+    }
 
     /** Multiplies this matrix by another and returns itself, to allow multiple chained transformations. */
     multiply(mat: Matrix): Matrix {

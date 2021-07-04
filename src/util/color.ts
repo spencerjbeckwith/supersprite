@@ -14,10 +14,12 @@ class Color {
         this.red = red;
         this.green = green;
         this.blue = blue;
-        this.alpha = alpha || 1;
+        this.alpha = (alpha === undefined) ? 1 : alpha;
     }
 
-    // More color methods?
+    invert(): Color {
+        return new Color(1-this.red,1-this.green,1-this.blue,this.alpha);
+    }
 }
 
 Color.fromHex = function(hex: string, alpha?: number) : Color {
