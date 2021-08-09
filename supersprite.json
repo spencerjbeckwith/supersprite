@@ -1,0 +1,16 @@
+{
+    "dir": "C:\\Users\\Spencer\\Documents\\Web\\rpg\\asset\\spr",
+    "outputImage": "./atlas.png",
+    "outputTS": "./atlas.ts",
+    "outputJS": "./atlas.js",
+    "outputJSON": "./atlas.json",
+    "atlasWidth": 2048,
+    "atlasHeight": 2048,
+    "separationW": 16,
+    "separationH": 16,
+    "transparent": {
+        "red": 0,
+        "green": 0,
+        "blue": 0
+    }
+}

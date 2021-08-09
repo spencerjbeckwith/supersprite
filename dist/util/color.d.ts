@@ -10,5 +10,6 @@ declare class Color {
     static fromHex: (hex: string, alpha?: number) => Color;
     /** Creates a new color from three or four vectors. Each must be between 0 and 1. */
     constructor(red: number, green: number, blue: number, alpha?: number);
+    invert(): Color;
 }
 export default Color;

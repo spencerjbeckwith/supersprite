@@ -1,6 +1,6 @@
-import Shader from "./shader";
-import Color from "./util/color";
-import Matrix from "./util/matrix";
+import Shader from "./shader.js";
+import Color from "./util/color.js";
+import Matrix from "./util/matrix.js";
 
 interface Sprite { // move to new file?
     name: string;

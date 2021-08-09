@@ -1,5 +1,5 @@
-import Color from "./util/color";
-import Matrix from "./util/matrix";
+import Color from "./util/color.js";
+import Matrix from "./util/matrix.js";
 
 interface ShaderOptions {
     vertexSource: string;
@@ -45,9 +45,11 @@ class Shader {
     static gameTextureBlend: Color | number[];
     static viewWidth: number;
     static viewHeight: number;
+    static displayWidth: number;
+    static displayHeight: number;
 
     /** Must be called before any drawing can take place. */
-    static init: (gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D, viewWidth: number, viewHeight: number, 
+    static init: (gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D, viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number,
         imageOptions?: ShaderOptions, primitiveOptions?: ShaderOptions, 
         positionOrder?: Float32Array, triangleOrder?: Float32Array) => void;
 
@@ -61,7 +63,7 @@ class Shader {
     static loadAtlasTexture: (url: string) => Promise<WebGLTexture>;
 
     /** Must be called every time the view changes size. */
-    static setProjection: (viewWidth: number, viewHeight: number) => void;
+    static setProjection: (viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number) => void;
 
     constructor(opt: ShaderOptions) {
         const gl = Shader.gl;
@@ -157,6 +159,7 @@ class Shader {
 }
 
 Shader.createShader = function(type: number, source: string): WebGLShader {
+    // Don't call - this is called by the Shader constructor when you init
     const gl = Shader.gl;
     const shader = gl.createShader(type);
     if (!shader) {
@@ -174,10 +177,12 @@ Shader.createShader = function(type: number, source: string): WebGLShader {
     return shader;
 }
 
-Shader.init = function(gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D, viewWidth: number, viewHeight: number,
+Shader.init = function(gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D, viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number, 
         imageOptions?: ShaderOptions, primitiveOptions?: ShaderOptions, 
         positionOrder = new Float32Array([0,0,0,1,1,1,1,1,1,0,0,0,]),
         triangleOrder = new Float32Array([0,0,0.5,0.5])) {
+    // Call before your animation loop begins
+
     this.positionOrder = positionOrder;
     this.triangleOrder = triangleOrder;
     this.currentProgram = null;
@@ -236,8 +241,6 @@ Shader.init = function(gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D,
         }
     });
 
-    this.setProjection(viewWidth,viewHeight);
-
     // Init gl
     ctx.imageSmoothingEnabled = false;
     gl.clearColor(0,0,0,1);
@@ -252,12 +255,11 @@ Shader.init = function(gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D,
         throw new ShaderError(`Failed to create rendering target WebGLTexture!`);
     }
     this.gameTexture = tex;
-    gl.bindTexture(gl.TEXTURE_2D,this.gameTexture);
+    this.setProjection(viewWidth,viewHeight,displayWidth,displayHeight); // also binds game texture
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,viewWidth,viewHeight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
 
     this.gameTexturePositionMatrix = [2, 0, 0, 0, -2, 0, -1, 1, 1];
     this.gameTextureIdentityMatrix = [1, 0, 0, 0, -1, 0, 0, 1, 1];
@@ -273,6 +275,8 @@ Shader.init = function(gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D,
 }
 
 Shader.beginRender = function(atlasTexture: WebGLTexture): void {
+    // Call at the start of each frame
+
     const gl = this.gl;
     const ctx = this.ctx;
     gl.bindFramebuffer(gl.FRAMEBUFFER,this.frameBuffer);
@@ -292,14 +296,19 @@ Shader.beginRender = function(atlasTexture: WebGLTexture): void {
 }
 
 Shader.render = function(): void {
+    // Call at the end of each frame
+
     // Switch to right framebuffer and texture
     const gl = this.gl;
     const ctx = this.ctx;
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    gl.viewport(0,0,this.viewWidth,this.viewHeight); // replace with canvas dimensions?
+    gl.viewport(0,0,this.displayWidth,this.displayHeight);
     gl.clearColor(0,0,0,0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.bindTexture(gl.TEXTURE_2D,this.gameTexture);
+    // the view width/height is the game surface
+    // the display width/height is the canvas
+    // the view will be stretched to fill the display. If they arent the same size, the view will be stretched to fit.
 
     // Update bound buffer to correct type
     this.imageShader.use();
@@ -324,7 +333,7 @@ Shader.render = function(): void {
     ctx.restore();
 }
 
-Shader.loadAtlasTexture = async function(url: string): Promise<WebGLTexture> {
+Shader.loadAtlasTexture = function(url: string): Promise<WebGLTexture> {
     const gl = this.gl;
     return new Promise((resolve, reject) => {
         const tex = gl.createTexture();
@@ -349,10 +358,12 @@ Shader.loadAtlasTexture = async function(url: string): Promise<WebGLTexture> {
     });
 }
 
-Shader.setProjection = function(viewWidth: number, viewHeight: number) {
+Shader.setProjection = function(viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number) {
     const gl = this.gl;
     this.viewWidth = viewWidth;
     this.viewHeight = viewHeight;
+    this.displayWidth = displayWidth || viewWidth;
+    this.displayHeight = displayHeight || viewHeight;
     this.projection = Matrix.projection(this.viewWidth,this.viewHeight);
 
     // Initialize primitive shader w/ new position uniforms.
@@ -362,7 +373,6 @@ Shader.setProjection = function(viewWidth: number, viewHeight: number) {
     // Resize texture
     gl.bindTexture(gl.TEXTURE_2D,this.gameTexture);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,this.viewWidth,this.viewHeight,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-
 }
 
 class ShaderError extends Error {

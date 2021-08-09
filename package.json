@@ -1,11 +1,10 @@
 {
   "name": "supersprite",
+  "type": "module",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "main": "dist/index.js",
+  "bin": "./script/atlas.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/spencerjbeckwith/supersprite.git"
@@ -15,5 +14,11 @@
   "bugs": {
     "url": "https://github.com/spencerjbeckwith/supersprite/issues"
   },
-  "homepage": "https://github.com/spencerjbeckwith/supersprite#readme"
+  "homepage": "https://github.com/spencerjbeckwith/supersprite#readme",
+  "dependencies": {
+    "@nodelib/fs.walk": "^1.2.7",
+    "async": "^3.2.0",
+    "gifwrap": "^0.9.2",
+    "jimp": "^0.16.1"
+  }
 }
