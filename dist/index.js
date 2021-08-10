@@ -44,14 +44,20 @@ function initialize(options) {
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('orientationchange', resizeCanvas);
     resizeCanvas();
-    // Texture
-    Shader.loadAtlasTexture(options.atlasURL).then((tex) => {
-        Shader.atlasTexture = tex;
+    if (options.atlasURL) {
+        // Texture
+        Shader.loadAtlasTexture(options.atlasURL).then((tex) => {
+            Shader.atlasTexture = tex;
+            options.mainLoop();
+        }).catch((err) => {
+            console.error('Failed to load atlas texture!');
+            console.error(err);
+        });
+    }
+    else {
+        // No textures
         options.mainLoop();
-    }).catch((err) => {
-        console.error('Failed to load atlas texture!');
-        console.error(err);
-    });
+    }
 }
 /** Refreshes the size of the canvas according to the current size of the window and supersprite's responsive, maintainAspectRatio, and scalePerfectly options. */
 function resizeCanvas() {

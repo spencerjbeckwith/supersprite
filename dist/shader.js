@@ -1,6 +1,8 @@
 import Color from "./util/color.js";
 import Matrix from "./util/matrix.js";
+/** A class for shader programs used by supersprite, which contains a lot of static properties and methods to control supersprite's drawing behavior. */
 class Shader {
+    /** Creates a new Shader instance with a new shader program. */
     constructor(opt) {
         const gl = Shader.gl;
         const vertexShader = Shader.createShader(gl.VERTEX_SHADER, opt.vertexSource);
@@ -67,6 +69,7 @@ class Shader {
             gl.vertexAttribPointer(this.textureAttribute, 2, gl.FLOAT, false, 0, 0);
         }
     }
+    /** Sets this current Shader instance as the current program to use when drawing. */
     use(positions = Shader.positionOrder) {
         // Set our position attribute to whatever is provided (primitives) or default positions (images)
         const gl = Shader.gl;

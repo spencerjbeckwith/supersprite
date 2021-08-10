@@ -6,7 +6,7 @@ interface superspriteOptions {
     /** Your animation frame function. Be sure to call requestAnimationFrame at the end. This will be invoked by supersprite automatically once the atlas texture has loaded. */
     mainLoop: () => void;
     /** A URL to the atlas texture output by supersprite. Note that in order to test locally, you must host a local webserver to serve this resource. */
-    atlasURL: string;
+    atlasURL?: string;
     /** Determines supersprite's behavior according to the window size. 'static' maintains a constant view and display size, 'stretch' matches the view and display size to the window, and 'scale' keeps the view size constant while stretching the display to the window size. */
     responsive?: 'static' | 'stretch' | 'scale';
     /** If true, supersprite will leave bars on screen to ensure no canvas contents are distorted. */
