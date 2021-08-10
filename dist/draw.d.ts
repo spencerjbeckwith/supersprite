@@ -1,7 +1,6 @@
 import Color from "./util/color.js";
 import Matrix from "./util/matrix.js";
 interface Sprite {
-    name: string;
     width: number;
     height: number;
     originX: number;

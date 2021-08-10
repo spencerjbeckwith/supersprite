@@ -153,7 +153,7 @@ Shader.init = function (gl, ctx, viewWidth, viewHeight, displayWidth, displayHei
         }
     });
     // Init gl
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = this.contextImageSmoothing || false;
     gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.disable(gl.DEPTH_TEST);
@@ -181,17 +181,17 @@ Shader.init = function (gl, ctx, viewWidth, viewHeight, displayWidth, displayHei
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.gameTexture, 0);
 };
-Shader.beginRender = function (atlasTexture) {
+Shader.beginRender = function () {
     // Call at the start of each frame
     const gl = this.gl;
     const ctx = this.ctx;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffer);
     gl.viewport(0, 0, this.viewWidth, this.viewHeight);
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(this.backgroundColor.red, this.backgroundColor.green, this.backgroundColor.blue, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     ctx.clearRect(0, 0, this.viewWidth, this.viewHeight);
     ctx.save();
-    gl.bindTexture(gl.TEXTURE_2D, atlasTexture);
+    gl.bindTexture(gl.TEXTURE_2D, this.atlasTexture);
     this.imageShader.use();
     gl.uniform4f(this.imageShader.blendUniform, 1, 1, 1, 1);
     this.internalTimer++;
@@ -266,9 +266,25 @@ Shader.setProjection = function (viewWidth, viewHeight, displayWidth, displayHei
     // Initialize primitive shader w/ new position uniforms.
     this.primitiveShader.use();
     gl.uniformMatrix3fv(this.primitiveShader.positionMatrix, false, this.projection.values);
+    // Resize canvases
+    this.cv1.width = displayWidth || viewWidth;
+    this.cv1.height = displayHeight || viewHeight;
+    this.cv2.width = this.cv1.width;
+    this.cv2.height = this.cv1.height;
     // Resize texture
     gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.viewWidth, this.viewHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    // Fix context
+    this.ctx.imageSmoothingEnabled = this.contextImageSmoothing;
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(this.displayWidth / this.viewWidth, this.displayHeight / this.viewHeight);
+};
+Shader.setBackgroundColor = function (red, green, blue) {
+    this.backgroundColor = {
+        red: red,
+        green: green,
+        blue: blue,
+    };
 };
 class ShaderError extends Error {
     constructor(message) {

@@ -3,7 +3,6 @@ import Color from "./util/color.js";
 import Matrix from "./util/matrix.js";
 
 interface Sprite { // move to new file?
-    name: string;
     width: number;
     height: number;
     originX: number;

@@ -32,7 +32,10 @@ declare class Shader {
     static projection: Matrix;
     static internalTimer: number;
     static createShader: (type: number, source: string) => WebGLShader;
+    static cv1: HTMLCanvasElement;
+    static cv2: HTMLCanvasElement;
     static gameTexture: WebGLTexture;
+    static atlasTexture: WebGLTexture;
     static frameBuffer: WebGLFramebuffer;
     static gameTexturePositionMatrix: number[];
     static gameTextureIdentityMatrix: number[];
@@ -41,16 +44,26 @@ declare class Shader {
     static viewHeight: number;
     static displayWidth: number;
     static displayHeight: number;
+    static backgroundColor: {
+        red: number;
+        green: number;
+        blue: number;
+    };
+    static contextImageSmoothing: boolean;
+    static responsive: 'static' | 'stretch' | 'scale';
+    static maintainAspectRatio?: boolean;
+    static scalePerfectly?: boolean;
     /** Must be called before any drawing can take place. */
     static init: (gl: WebGLRenderingContext, ctx: CanvasRenderingContext2D, viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number, imageOptions?: ShaderOptions, primitiveOptions?: ShaderOptions, positionOrder?: Float32Array, triangleOrder?: Float32Array) => void;
     /** Must be called at the start of every animation frame.*/
-    static beginRender: (atlasTexture: WebGLTexture) => void;
+    static beginRender: () => void;
     /** Must be called at the end of every animation frame. */
     static render: () => void;
     /** Must be called before the main loop begins. */
     static loadAtlasTexture: (url: string) => Promise<WebGLTexture>;
     /** Must be called every time the view changes size. */
     static setProjection: (viewWidth: number, viewHeight: number, displayWidth?: number, displayHeight?: number) => void;
+    static setBackgroundColor: (red: number, green: number, blue: number) => void;
     constructor(opt: ShaderOptions);
     use(positions?: Float32Array): void;
 }

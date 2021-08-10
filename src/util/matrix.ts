@@ -53,7 +53,7 @@ class Matrix {
         return this;
     }
 
-    /** Translates this matrix and returns itself, to allow multiple chained transformations. */
+    /** Translates this matrix and returns itself, to allow multiple chained transformations. Note that this does not translate the matrix by PIXELS, but by factors of the sprite's width and height. So, to translate one full sprite width to the right, you'd use "translate(1,0)" */
     translate(tx: number, ty: number): Matrix {
         return this.multiply(new Matrix([
             1, 0, 0,
