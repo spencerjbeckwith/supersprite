@@ -17,7 +17,7 @@ function initialize(options) {
     cv2.setAttribute('style', 'position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); overflow: hidden;');
     // Get our contexts
     const gl = cv1.getContext('webgl', {
-        antialias: options.glAntialias || true,
+        antialias: options.glAntialias || false,
     });
     if (!gl) {
         throw new Error('Failed to initialize WebGL context!');
@@ -39,8 +39,9 @@ function initialize(options) {
     Shader.responsive = options.responsive || 'static';
     Shader.maintainAspectRatio = options.maintainAspectRatio;
     Shader.scalePerfectly = options.scalePerfectly;
+    Shader.contextImageSmoothing = options.contextImageSmoothing || false;
     // GL
-    Shader.init(gl, ctx, options.viewWidth || window.innerWidth, options.viewHeight || window.innerHeight, options.displayWidth, options.displayHeight);
+    Shader.init(gl, ctx, options.viewWidth || window.innerWidth, options.viewHeight || window.innerHeight, options.displayWidth, options.displayHeight, options.imageShader, options.primitiveShader, options.positionOrder, options.triangleOrder);
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('orientationchange', resizeCanvas);
     resizeCanvas();

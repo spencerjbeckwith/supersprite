@@ -60,8 +60,55 @@ function drawSprite(sprite, image, x, y, transformFn, rcol, g, b, a) {
     Shader.gl.drawArrays(Shader.gl.TRIANGLES, 0, 6);
 }
 function drawSpriteSpeed(sprite, speed, x, y, transformFn, rcol, g, b, a) {
-    drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn, rcol, g, b, a);
+    if (rcol instanceof Color) {
+        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol);
+    }
+    else if (rcol && g && b) {
+        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol, g, b, a);
+    }
+    else if (transformFn) {
+        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn);
+    }
+    else {
+        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y);
+    }
 }
+/**
+ * Draws a sprite on the 2D context. Blending and transformations past scaling are not possible, and the sprite will appear above all regular GL drawing.
+ * @param sprite Sprite resource as output by supersprite's atlas compiler
+ * @param image Index of the image to draw from the sprite. Images begin at 0. Values past the total number will wrap back around to an existing image.
+ * @param x X coordinate to place the sprite's origin
+ * @param y Y coordinate to place the sprite's origin
+ * @param scaleX Optional scale factor to apply to the sprite horizontally
+ * @param scaleY Optional scale factor to apply to the sprite vertically
+ */
+function drawSpriteCtx(sprite, image, x, y, scaleX = 1, scaleY = 1) {
+    image = Math.floor(image);
+    if (!sprite.images[image]) {
+        image %= sprite.images.length;
+    }
+    const i = sprite.images[image];
+    Shader.ctx.drawImage(Shader.atlasImage, i.x - sprite.originX, i.y - sprite.originY, sprite.width, sprite.height, x, y, sprite.width * scaleX, sprite.height * scaleY);
+}
+/**
+ * Draws an animated sprite on the 2D context. Blending and transformations past scaling are not possible, and the sprite will appear above all regular GL drawing.
+ * @param sprite Sprite resource as output by supersprite's atlas compiler
+ * @param speed Number of frames per second to animate the sprite. Should be less than 1.
+ * @param x X coordinate to place the sprite's origin
+ * @param y Y coordinate to place the sprite's origin
+ * @param scaleX Optional scale factor to apply to the sprite horizontally
+ * @param scaleY Optional scale factor to apply to the sprite vertically
+ */
+function drawSpriteSpeedCtx(sprite, speed, x, y, scaleX = 1, scaleY = 1) {
+    drawSpriteCtx(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, scaleX, scaleY);
+}
+/**
+ * Draws a line of text on the 2D context.
+ * @param x X coordinate to place the text at
+ * @param y Y coordinate to place the text at
+ * @param text The text string to draw
+ * @param opt Optional options to control aspects of the drawing, such as alignment, color and font. Defaults to white 10px sans-serif aligned top-left.
+ */
 function drawText(x, y, text, opt) {
     const ctx = Shader.ctx;
     ctx.textAlign = (opt === null || opt === void 0 ? void 0 : opt.hAlign) || 'left';
@@ -74,6 +121,14 @@ function drawText(x, y, text, opt) {
     ctx.fillStyle = (opt === null || opt === void 0 ? void 0 : opt.color) || 'white';
     ctx.fillText(text, x, y, opt === null || opt === void 0 ? void 0 : opt.maxWidth);
 }
+/**
+ * Draws text on the 2D context, constrained to fit in a certain space. Exceeding the provided width will allow the text to break onto multiple lines.
+ * @param x X coordinate to place the text at
+ * @param y Y coordinate to place the test at
+ * @param text The text string to draw
+ * @param width The width (in pixels) that, once exceeded, the text should break
+ * @param opt Optional options to control aspects of the drawing, such as alignment, color, and font. Defaults to white 10px sans-serif aligned top-left.
+ */
 function drawTextWrap(x, y, text, width, opt) {
     const ctx = Shader.ctx;
     const lines = [];
@@ -138,6 +193,8 @@ export default {
     primitive: drawPrimitive,
     sprite: drawSprite,
     spriteSpeed: drawSpriteSpeed,
+    spriteCtx: drawSpriteCtx,
+    spriteSpeedCtx: drawSpriteSpeedCtx,
     text: drawText,
     textWrap: drawTextWrap,
 };

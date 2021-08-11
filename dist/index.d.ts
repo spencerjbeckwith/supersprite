@@ -19,9 +19,9 @@ interface superspriteOptions {
         green: number;
         blue: number;
     };
-    /** Controls GL's antialiasing. Should be false for pixel-art games, true otherwise. */
+    /** Controls GL's antialiasing. Should be false for pixel-art games, true otherwise. Defaults to false. */
     glAntialias?: boolean;
-    /** Controls the 2D context's antialiasing. Should be false for pixel-art games, true otherwise. */
+    /** Controls the 2D context's antialiasing. Should be false for pixel-art games, true otherwise. Defaults to false. */
     contextImageSmoothing?: boolean;
     /** The initial width of the view. May change if the responsive option is set to 'stretch'. */
     viewWidth?: number;
@@ -31,6 +31,14 @@ interface superspriteOptions {
     displayWidth?: number;
     /** The initial height of the canvas. May change if the responsive option is not set to 'static'.*/
     displayHeight?: number;
+    /** Options to override the default image shader with your own. */
+    imageShader?: ShaderOptions;
+    /** Options to override the default primitive shader with your own. */
+    primitiveShader?: ShaderOptions;
+    /** An optional override to the default arrangement of vertex positions when drawing an image. */
+    positionOrder?: Float32Array;
+    /** An optional override to the default arrangement of triangle positions when drawing primitives. */
+    triangleOrder?: Float32Array;
 }
 /** Initialize supersprite by creating the canvases, setting up the GL and 2D contexts, and loading the atlas texture. */
 declare function initialize(options: superspriteOptions): void;

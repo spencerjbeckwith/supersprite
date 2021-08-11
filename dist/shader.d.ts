@@ -1,21 +1,5 @@
 import Color from "./util/color.js";
 import Matrix from "./util/matrix.js";
-interface ShaderOptions {
-    /** Source for the vertex shader of this program. */
-    vertexSource: string;
-    /** Source for the fragment shader of this program. */
-    fragmentSource: string;
-    /** If true, the shader will attempt to set texture attributes and uniforms. */
-    useTexture: boolean;
-    /** Names of the attributes and uniforms of this program as they appear in the source. */
-    names: {
-        positionAttribute: string;
-        positionUniform: string;
-        blendUniform: string;
-        textureAttribute?: string;
-        textureUniform?: string;
-    };
-}
 /** A class for shader programs used by supersprite, which contains a lot of static properties and methods to control supersprite's drawing behavior. */
 declare class Shader {
     /** The WebGL program created by this Shader instance. */
@@ -41,7 +25,11 @@ declare class Shader {
     static projection: Matrix;
     /** Used for drawing sprites by their image speed and other time-sensitive effects. */
     static internalTimer: number;
-    /** Creates a Shader from a type (vertex or attribute) and its source code. */
+    /**
+     * Creates a Shader from a type (vertex or attribute) and its source code.
+     * @param type The type of shader to create - gl.VERTEX_SHADER or gl.FRAGMENT_SHADER
+     * @param source The code to compile
+     */
     static createShader: (type: number, source: string) => WebGLShader;
     /** The GL canvas. */
     static cv1: HTMLCanvasElement;
@@ -51,10 +39,13 @@ declare class Shader {
     static gameTexture: WebGLTexture;
     /** The texture from which all sprites are drawn. */
     static atlasTexture: WebGLTexture;
+    /** The image element that becomes the atlas texture. */
+    static atlasImage: HTMLImageElement;
     /** The buffer used to allow drawing onto the gameTexture, to enable full-screen shader effects. */
     static frameBuffer: WebGLFramebuffer;
     static gameTexturePositionMatrix: number[];
     static gameTextureIdentityMatrix: number[];
+    /** You can set this to alter the blend of the full game screen, for full-screen effects like flashing or fading. */
     static gameTextureBlend: Color | number[];
     /** The current width of the view, which is the game's playing area. */
     static viewWidth: number;
