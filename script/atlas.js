@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
-import path from 'path';
 import jimp from 'jimp';
 import { BitmapImage, GifUtil } from 'gifwrap';
 import async from 'async';
-import { walk as fsWalk } from '@nodelib/fs.walk';
 
 /*
     NOTES FOR USING THIS SCRIPT
