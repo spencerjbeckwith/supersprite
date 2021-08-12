@@ -11,10 +11,10 @@ import { walk as fsWalk } from '@nodelib/fs.walk';
     NOTES FOR USING THIS SCRIPT
     (want to make this easier to read? VS code CTRL+Z turns on text wrap)
 
-    This script will transform a directory of gifs into an image atlas and a chosen output of image locations in either JavaScript, TypeScript, or JSON.
+    This script will transform a directory of GIFs and PNGs into an image atlas and a chosen output of image locations in either JavaScript, TypeScript, or JSON.
     The only argument provided should be a config JSON file with the following fields:
 
-        dir: The input directory. Every .gif file in this folder is compiled as a sprite. The entire directory tree is crawled for images. Just make sure that every .gif has a unique filename, EVEN IF IT'S IN A DIFFERENT FOLDER. The name of each file becomes the identifier you'll use for that sprite in-code.
+        dir: The input directory. See below for more details.
         outputImage: The output image
         outputJS: If defined, output location data will be written as JavaScript to this file.
         outputTS: If defined, output location data will be written as annotated TypeScript to this file.
@@ -25,12 +25,22 @@ import { walk as fsWalk } from '@nodelib/fs.walk';
         separationH: Ditto. For best results, set it to the same as W. Defaults to 16.
         transparent: An object with "red" "green" and "blue" properties, set each to RGB values from 0 to 255. All colors in your gifs that match this become transparent when compiled in the atlas, and when they appear in your game. Defaults to black (0, 0, 0)
 
-    If no argument, the script will default to using "./supersprite.json".
+    If no argument, the script will default to using "./supersprite.json" as config. If not present, there will be an error.
 
     FILE INPUTS
-    Each file must be a gif. Because gifs don't support transparency, all gifs must have a "background color" as specified in the config file.
+    There are three ways you can input files, depending on their location in the main sprite folder.
+    1. Every GIF file found in the root folder and immediate child folders is compiled into its own, individual sprite
+    2. Every PNG file found in the root folder is compiled into a single-image sprite.
+    3. Every immediate child folder with PNGs in it is compiled into a sprite, all using the name of the folder.
+        - The images are read from the folder and placed in order in the sprite according to their order in the filesystem, e.g. alphabetically.
+        - GIFs within folders still compile into their own sprites, even if there are PNGs present in that folder.
+        - If no PNGs are in a folder, no sprite will be created for it.
+    All other file types are ignored.
+
+    Because gifs don't support transparency, all GIFs must have a "background color" as specified in the config file. This color has no effect on loading PNGs.
     Typically you want this to be black but any color would work. The specified color becomes transparent on all input images, and all inputs should have the same transparent color.
-    Each sprite may also be given origin coordinates. At the end of the filename, place an underscore and a number to indicate both X and Y origin offsets when drawing.
+
+    Each sprite may also be given origin coordinates. At the end of the filename or PNG folder, place an underscore and a number to indicate both X and Y origin offsets when drawing.
         For example: "mySprite_12_16.png" would have an origin of X 12 and Y 16.
         Origins can be negative as well. Example: "anotherSprite_-8_0.png" has an origin of X -8 and Y 0.
 
@@ -66,7 +76,7 @@ if (!config.outputJS && !config.outputTS && !config.outputJSON) {
 }
 
 let startTime = Date.now();
-fsWalk(path.resolve(config.dir),(err, entries) => {
+/*fsWalk(path.resolve(config.dir),(err, entries) => {
     if (err) {
         throw err;
     }
@@ -97,7 +107,60 @@ fsWalk(path.resolve(config.dir),(err, entries) => {
     }
 
     async.parallel(tasks,compileAtlas);
-});
+});*/
+
+const tasks = [];
+const directory = fs.opendirSync(config.dir);
+let dirent = directory.readSync();
+while (dirent !== null) {
+    if (dirent.isDirectory()) {
+        // Read inner directory
+        const innerDirectory = fs.opendirSync(`${config.dir}\\${dirent.name}`);
+        let innerDirent = innerDirectory.readSync();
+        const filepaths = [];
+        while (innerDirent !== null) {
+            if (innerDirent.isFile()) {
+                if (innerDirent.name.toLowerCase().endsWith('.gif')) {
+                    // Read this GIF as its own sprite
+                    let currentName = innerDirent.name, currentPath = `${config.dir}\\${dirent.name}\\${innerDirent.name}`;
+                    tasks.push((callback) => {
+                        readGif(callback,currentPath,currentName);
+                    });
+                } else if (innerDirent.name.toLowerCase().endsWith('.png')) {
+                    // Read this PNG as one image of a sprite for this folder - add to our paths
+                    filepaths.push(`${config.dir}\\${dirent.name}\\${innerDirent.name}`);
+                }
+            }
+            innerDirent = innerDirectory.readSync();
+        }
+        innerDirectory.closeSync();
+
+        // If we found PNGs from the inner directory, read them as a sprite
+        if (filepaths.length > 0) {
+            let currentName = dirent.name;
+            tasks.push((callback) => {
+                readPNGs(callback,filepaths,currentName);
+            });
+        }
+    } else if (dirent.isFile()) {
+        if (dirent.name.toLowerCase().endsWith('.gif')) {
+            // Read this gif from top-level directory
+            let currentName = dirent.name;
+            tasks.push((callback) => {
+                readGif(callback,`${config.dir}\\${currentName}`,currentName);
+            });
+        } else if (dirent.name.toLowerCase().endsWith('.png')) {
+            // Read png for a single-image sprite
+            let currentName = dirent.name;
+            tasks.push((callback) => {
+                readPNGs(callback,[`${config.dir}\\${currentName}`],currentName);
+            });
+        }
+    }
+    dirent = directory.readSync();
+}
+directory.closeSync();
+async.parallel(tasks,compileAtlas);
 
 function readGif(callback,filepath,name) {
     GifUtil.read(filepath).then((gif) => {
@@ -129,8 +192,10 @@ function readGif(callback,filepath,name) {
             });
         }
 
-        async.parallel(tasks,(err, imageArray) => {
+        // I think this has to be in series. Doing parallel seemed to work but I don't see why it would always be in order that way... hm.
+        async.series(tasks,(err, imageArray) => {
             if (err) {
+                console.error(`Failed to load all images of sprite ${name}!`);
                 callback(err);
             } else {
                 for (let i = 0; i < imageArray.length; i++) {
@@ -153,6 +218,40 @@ function readGif(callback,filepath,name) {
             }
         });
     }).catch(callback);
+}
+
+function readPNGs(callback,filepaths,name) {
+    const tasks = [];
+    let spriteWidth = 0, spriteHeight = 0;
+    for (let f = 0; f < filepaths.length; f++) {
+        const filepath = filepaths[f];
+        // Load a new jimp for each frame
+        tasks.push((callback) => {
+            jimp.read(filepath,(err, image) => {
+                if (err) {
+                    console.error(`Failed to read image ${f} of sprite ${name}!`);
+                    callback(err);
+                } else {
+                    callback(null,image);
+                }
+            });
+        });
+    }
+
+    // Loads images in order
+    async.series(tasks,(err, imageArray) => {
+        if (err) {
+            console.error(`Failed to load all images of sprite ${name}!`);
+            callback(err);
+        } else {
+            callback(null, {
+                spriteName: name.replace(/\.png/i,''),
+                width: spriteWidth,
+                height: spriteHeight,
+                images: imageArray,
+            });
+        }
+    });
 }
 
 function compileAtlas(err, spriteArray) {

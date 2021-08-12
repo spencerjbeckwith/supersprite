@@ -1,12 +1,14 @@
 # supersprite
 
-supersprite is a sprite drawing engine for 2D browser games that can use either JavaScript or TypeScript. It grealy simplifies the process of setting up your WebGL context, loading textures, compiling shaders, etc. when all you want to do is get some images on screen. As opposed to just using a 2D context and its `drawImage` method, supersprite provides a fast, powerful, and intuitive transformation and blending system that is made possible by WebGL, while still keeping the simplicity of singular, self-contained draw calls. It's essential the same as a 2D context, that unlocks the potential of GL shaders.
+supersprite is a sprite drawing engine for 2D browser games compatible with both JavaScript and TypeScript. It greatly simplifies the process of setting up your WebGL context, loading textures, compiling shaders, etc. when all you want to do is get some images on screen. As opposed to just using a 2D context and its `drawImage` method, supersprite provides a fast, powerful, and intuitive transformation and blending system that is made possible by WebGL, while still keeping the simplicity of singular, self-contained draw calls.
+
+I made this because I like to make a lot of 2D low-res pixel-art games, and the canvas 2D context just wasn't really doing it for me. I set up so many different projects using the same methods I figure I may as well make it an npm package to make my life a bit easier, and hopefully others can find it useful.
 
 ## [Live Example](https://beckwithweb.com/supersprite) - [Example Source](https://github.com/spencerjbeckwith/supersprite-example)
 
 supersprite itself is not a game engine - it doesn't handle any game objects, sounds, input, or networking. It fits seamlessly into your animation loop and is accessed through a variety of draw methods, so you can focus more on your gameplay instead of the many headaches that come with using WebGL. That said, supersprite is not suitable for anything 3-dimensional or anything that requires fine control over every single detail of your rendering process. While it is more than fast enough for almost every use case, it probably isn't the fastest sprite engine out there.
 
-supersprite also provides an atlas compilation utility, which will crawl a directory for GIF resources, place them on an atlas, and provide you with the data necessary to utilize that atlas with supersprite. At this time, only GIF images can be compiled into the atlas, though this may change in the future to accept folders of PNG files as well.
+supersprite also provides an atlas compilation utility, which will crawl a directory for GIF and PNG resources, place them on an atlas, and provide you with the data necessary to utilize that atlas with supersprite.
 
 # Usage
 
@@ -55,7 +57,7 @@ function main() {
 
 initialize({
     mainLoop: main,
-    atlasURL: 'build/atlas.png'; // Note that your atlas texture must be hosted on a webserver.
+    atlasURL: 'build/atlas.png';
 });
 ```
 
@@ -68,7 +70,7 @@ function main() {
     Shader.beginRender();
 
     draw.sprite(spr.example,0,100,100,(matrix) => {
-        return matrix.translate(1,0); // Will translate the sprite one sprite-width to the right. (Note that translate is not by pixels!)
+        return matrix.translate(1,0); // Will translate the sprite one sprite-width to the right. (Note that translate is not by pixels, but by sprite factors!)
     });
 
     Shader.render();
@@ -105,7 +107,7 @@ draw.sprite(spr.example,0,100,100,(matrix) => {
     return matrix.scale(2,2);
 },0.9,0.5,0.25,1);
 ```
---And you have complete control over a flexible system to draw sprites in crazy ways, never thought possible by a canvas's limited 2D context.
+--And you have complete control over a flexible system to draw sprites in crazy ways, never thought possible by a canvas's limited 2D context. This is much simpler than using dozens of `ctx.save`, `ctx.rotate`, `ctx.restore` etc. calls and I find it easier to wrap my head around, personally.
 
 ---
 
@@ -181,12 +183,12 @@ So how do you actually *use* supersprite? Well, it's pretty simple. Assuming you
 
 You might be wondering, how do I tell supersprite what sprites I want to use? Luckily it isn't that complicated. In order to draw sprites using WebGL, they must be part of a texture - and supersprite contains a utility to compile sprite resources into an atlas for you, and spits out the data you need in order to use them. First, you'll want to create a config file `supersprite.json`:
 
-```JSON
+```javascript
 {
     // Folder containing every sprite you want to use in-game
     "dir": "assets/sprites",
 
-    // The output image - should be the same as is loaded by your initialize function.
+    // The output image - should be loaded by your initialize function.
     "outputImage": "./atlas.png",
 
     // If defined, will output sprite data as TypeScript allowing you to use auto-complete on your own sprite names (how cool is that!?)
@@ -207,7 +209,7 @@ You might be wondering, how do I tell supersprite what sprites I want to use? Lu
     "separationW": 16,
     "separationH": 16,
 
-    // The color to use in the input GIFs to mark as transparent - as GIFs don't support transparency.
+    // The color to use in the input GIFs to mark as transparent - as GIFs don't support transparency. This has no affect on PNGs.
     "transparent": {
         "red": 0,
         "green": 0,
@@ -216,11 +218,51 @@ You might be wondering, how do I tell supersprite what sprites I want to use? Lu
 }
 ```
 
-The most important option is `dir`, which should be a directory of your sprite assets. ***As of right now, supersprite can only compile GIFs into your atlas.*** The entire directory is crawled for every GIF that is present, which then gets split and placed onto the atlas as a sprite. Even if your sprite is only one image, *it must still be in .gif format.* Sub-folders are crawled as well, allowing you to organize your assets better - but this does not have any impact on the way they are named. As such, *make sure every sprite (regardless of its location in the file system) has a unique name.*
+The most important option is `dir`, which should be a directory of your sprite assets. ***As of right now, supersprite can only compile GIFs and PNGs into your atlas.*** The following rules are followed when searching for images to compile:
 
-**The name of your GIF file becomes the name of your sprite when you use it in code.** So, if your GIF is named `mySprite.gif` you'll access it with supersprite as `spr.mySprite`.
+1. Every GIF file found in the root folder and immediate child folders is compiled into its own, individual sprite.
+2. Every PNG file found in the root folder is compiled into a single-image sprite.
+3. Every immediate child folder with PNG files in it compiles them all into one sprite, under the name of the folder.
+    - The PNGs that make the frames of the sprite are ordered according to their order in the filesystem, e.g. alphabetically.
+    - GIFs within folders still compile into their own sprites, even if there are PNGs present in that folder. The GIF will use its filename instead of the folder name, while the PNGs will use the folder name.
+    - If no PNGs are in a folder, no sprite will be created for it.
 
-**To set an origin point for your sprite, place coordinates *at the end of your filename, separated with underscores.***. If you want `mySprite.gif` to have an origin of (24,8) you would rename it to `mySprite_24_8.gif` but *you would still access it in code as `spr.mySprite`.* Your origins can also be negative: `mySprite_-20_-40.gif`. If no origin is defined, it defaults to (0,0) for every sprite.
+All other file types are currently ignored. As of now, there is no way to load a sprite strip without converting it to a GIF or a folder of PNG images.
+
+Example directory:
+- `sprites`
+    - `pngFolder`
+        - `frame0.png`
+        - `frame1.png`
+        - `frame2.png`
+    - `pngFolder2_8_8`
+        - `0.png`
+        - `1.png`
+        - `gifSprite_2_2.gif`
+    - `gifFolder`
+        - `foo.gif`
+        - `bar.gif`
+    - `singularImage.png`
+    - `gif1.gif`
+    - `gif2.gif`
+
+Will output the following sprites:
+- `pngFolder`
+- `pngFolder2` (with an origin of 8,8)
+- `gifSprite` (with an origin of 2,2)
+- `foo`
+- `bar`
+- `singularImage`
+- `gif1`
+- `gif2`
+
+Regardless of whether a sprite was originally GIF or PNG makes no difference in how it is used from supersprite.
+
+**The name of your GIF file, PNG file, or PNG folder becomes the name of your sprite when you use it in code.** So, if your GIF is named `mySprite.gif` you'll access it with supersprite as `spr.mySprite`.
+
+**To set an origin point for your sprite, place coordinates *at the end of your filename or folder name, separated with underscores.***. If you want `mySprite.gif` to have an origin of (24,8) you would rename it to `mySprite_24_8.gif` but *you would still access it in code as `spr.mySprite`.* Your origins can also be negative: `mySprite_-20_-40.gif`. If no origin is defined, it defaults to (0,0) for every sprite. This also applies to folders with PNGs: a PNG folder with an origin could be `mySprite_20_20`, for example.
+
+Make sure all your sprite names are unique or they'll overwrite each other in your output!
 
 In order to compile your atlas, simply run `npx supersprite` from your project root. You can also specify a different config file than the default `supersprite.json` as a third argument if you want. Make sure you recompile the atlas and rebuild your game (if using `outputJS` or `outputTS`) each time you add a new sprite resource!
 
@@ -228,19 +270,31 @@ In order to compile your atlas, simply run `npx supersprite` from your project r
 
 An important distinction to make when using supersprite is that of the `view` and the `display`. The view is defined as the actual game area, while the display is the canvas on screen. They don't necessarily have to be the same size - and in some cases, you wouldn't want that! The `initialize()` function includes several options that can control the way the canvas takes up screen-space and makes it user-responsive, as well as the default size for the view and display.
 
-The shape of the canvases is determined by the options specified for `responsive`, `maintainAspectRatio`, and `scalePerfectly` options. `responsive` can have three values:
+`responsive` can have three values:
 - `"static"` will keep the view and display at the same size as when they are created, regardless of if the window changes.
-- `"stretch"` will expand the view and display to cover as much of the window as possible, while keeping the contents of the canvas as a constant size.
+- `"stretch"` will expand the view and display to cover as much of the window as possible, while keeping the contents of the canvas at a constant size.
     - If `maintainAspectRatio` is true, supersprite will create bars at either the top/bottom or the sides of the screen to maintain the same aspect ratio as when the view was initially created. If it is false, the entire window will be filled.
     - Nothing on the canvases will appear to stretch, but increasing the size of the window gives the canvas more space. Drawings stay the same size.
-- `"scale"` will expand the view and display to cover as much of the widnow as possible, while resizing the contents of the canvas to fit.
+- `"scale"` will expand the view and display to cover as much of the window as possible, while resizing the contents of the canvas to fit.
     - If `maintainAspectRatio` is true, supersprite will create bars at either the top/bottom or the sides of the screen to maintain the same aspect ratio as when the view was initially created. Items will scale up, but not change shape. If this is false, the entire window will be filled and drawings will scale up and change shape.
         - If `scalePerfectly` is also true, the view will only scale up to integers, such as 1x, 2x, 3x, 4x, etc. This is ideal for pixel-perfect situations where you do not want any distortion whatsoever, but want to upsize a small game.
     - The view will not scale smaller than its initial size.
 
-The value you set for `responsive` depends on the needs of your game.
+The value you set for `responsive` depends on the needs of your game. When using `maintainAspectRatio` the initial size is set in your initialize function:
 
-# So how fast is it, anyway?
+```javascript
+initialize({
+    mainLoop: main,
+    atlasURL: 'atlas.png',
+    responsive: 'scale',
+    maintainAspectRatio: true,
+    scalePerfectly: true,
+    viewWidth: 400,
+    viewHeight: 240,
+});
+```
+
+# So how fast is supersprite, anyway?
 
 Well, on my slightly-above-average computer, I can draw about 800 sprites at once before my FPS begins to noticably drop below 60. I'm sure faster computers would do better than mine. For most games, I can't really imagine a situation where you'd *need* over 800 sprites at once except maybe to draw a tileset, and if you do, maybe supersprite shouldn't be your first choice of engine... Or you can find some sort of workaround.
 
@@ -248,8 +302,4 @@ Other things to know are that regardless of if you are drawing sprites with GL o
 
 # Enjoy!
 
-Please reach out to me with any questions, concerns, suggestions, if I made any stupid typos, etc. I look forward to seeing what you can make with supersprite!
-
-To do next:
-- make sure ctx scales properly
-- make example and host it
+Please reach out to me with any questions, concerns, suggestions, if I made any stupid typos, etc. I look forward to seeing what you can make with supersprite! I hope this document made sense and I did my best to cover everything, and what isn't covered should be self-explanatory or documented but if not, please reach out.
