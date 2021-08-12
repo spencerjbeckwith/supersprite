@@ -1,7 +1,7 @@
 {
   "name": "supersprite",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/index.js",
   "bin": "./script/atlas.js",
