@@ -1,5 +1,6 @@
 import Shader from "./shader.js";
 import Color from "./util/color.js";
+import s from './sprite.js';
 
 /** An options object for drawing text on the 2D context. */
 interface drawTextOptions {
@@ -51,7 +52,7 @@ function drawLine(x: number, y: number, x2: number, y2: number, r: number, g: nu
 function drawLine(x: number, y: number, x2: number, y2: number, rcol: Color | number, g?: number, b?: number, a?: number): void {
     const positions = [x, y, x2, y2];
     preparePrimitive(positions,rcol,g,b,a);
-    Shader.gl.drawArrays(Shader.gl.LINES,0,2);
+    s.gl?.drawArrays(s.gl.LINES,0,2);
 }
 
 /**
@@ -81,7 +82,7 @@ function drawRect(x: number, y: number, x2: number, y2: number, rcol: Color | nu
         x2, y, x2, y2, x, y2,
     ];
     preparePrimitive(positions,rcol,g,b,a);
-    Shader.gl.drawArrays(Shader.gl.TRIANGLES,0,6);
+    s.gl?.drawArrays(s.gl.TRIANGLES,0,6);
 }
 
 /**
@@ -117,7 +118,7 @@ function drawCircle(x: number, y: number, radius: number, segments: number, rcol
     }
 
     preparePrimitive(positions,rcol,g,b,a);
-    Shader.gl.drawArrays(Shader.gl.TRIANGLE_FAN,0,segments+2);
+    s.gl?.drawArrays(s.gl.TRIANGLE_FAN,0,segments+2);
 }
 
 /**
@@ -139,7 +140,7 @@ function drawPrimitive(mode: number, positions: number[], col: Color): void;
 function drawPrimitive(mode: number, positions: number[], r: number, g: number, b: number, a?: number): void;
 function drawPrimitive(mode: number, positions: number[], rcol: Color | number, g?: number, b?: number, a?: number): void {
     preparePrimitive(positions,rcol,g,b,a);
-    Shader.gl.drawArrays(mode,0,positions.length/2);
+    s.gl?.drawArrays(mode,0,positions.length/2);
 }
 
 /**
@@ -183,39 +184,42 @@ function drawSprite(sprite: Sprite, image: number, x: number, y: number, transfo
  */
 function drawSprite(sprite: Sprite, image: number, x: number, y: number, transformFn: TransformerFn | null, r: number, g: number, b: number, a?: number): void;
 function drawSprite(sprite: Sprite, image: number, x: number, y: number, transformFn?: TransformerFn | null, rcol?: Color | number , g?: number, b?: number, a?: number): void {
-    Shader.imageShader.use();
+    if (s.gl && s.shaders.image) {
+        s.shaders.image.use();
+        s.gl.bindTexture(s.gl.TEXTURE_2D,s.atlasTexture);
 
-    // Limit our image
-    image = Math.floor(image);
-    if (!sprite.images[image]) {
-        image %= sprite.images.length;
-    }
+        // Limit our image
+        image = Math.floor(image);
+        if (!sprite.images[image]) {
+            image %= sprite.images.length;
+        }
 
-    // Set position matrix
-    let mat = Shader.projection.copy().translate(x,y).scale(sprite.width,sprite.height);
+        // Set position matrix
+        let mat = s.projection.copy().translate(x,y).scale(sprite.width,sprite.height);
 
-    // Chain more transformations here!
-    if (transformFn) {
-        mat = transformFn(mat);
-    }
+        // Chain more transformations here!
+        if (transformFn) {
+            mat = transformFn(mat);
+        }
 
-    // Move by sprite's origin - do after transformations so its still relevant in clipspace
-    if (sprite.originX !== 0 || sprite.originY !== 0) {
-        mat.translate(-sprite.originX/sprite.width,-sprite.originY/sprite.height);
-    }
+        // Move by sprite's origin - do after transformations so its still relevant in clipspace
+        if (sprite.originX !== 0 || sprite.originY !== 0) {
+            mat.translate(-sprite.originX/sprite.width,-sprite.originY/sprite.height);
+        }
 
-    Shader.gl.uniformMatrix3fv(Shader.imageShader.positionMatrix,false,mat.values);
-    Shader.gl.uniformMatrix3fv(Shader.imageShader.textureMatrix || null,false,sprite.images[image].t);
+        s.gl.uniformMatrix3fv(s.shaders.image.uniforms.positionMatrix,false,mat.values);
+        s.gl.uniformMatrix3fv(s.shaders.image.uniforms.textureMatrix,false,sprite.images[image].t);
 
-    if (rcol instanceof Color) {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform,rcol.red,rcol.green,rcol.blue,rcol.alpha);
-    } else if (rcol !== undefined && g !== undefined && b !== undefined) {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform,rcol,g,b,(a === undefined) ? 1 : a);
-    } else {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform,1,1,1,1);
-    }
+        if (rcol instanceof Color) {
+            s.gl.uniform4f(s.shaders.image?.uniforms.blend || null,rcol.red,rcol.green,rcol.blue,rcol.alpha);
+        } else if (rcol !== undefined && g !== undefined && b !== undefined) {
+            s.gl.uniform4f(s.shaders.image?.uniforms.blend || null,rcol,g,b,(a === undefined) ? 1 : a);
+        } else {
+            s.gl.uniform4f(s.shaders.image?.uniforms.blend || null,1,1,1,1);
+        }
     
-    Shader.gl.drawArrays(Shader.gl.TRIANGLES,0,6);
+        s.gl.drawArrays(s.gl.TRIANGLES,0,6);
+    }
 }
 
 /**
@@ -260,13 +264,13 @@ function drawSpriteSpeed(sprite: Sprite, speed: number, x: number, y: number, tr
 function drawSpriteSpeed(sprite: Sprite, speed: number, x: number, y: number, transformFn: TransformerFn | null, r: number, g: number, b: number, a?: number): void;
 function drawSpriteSpeed(sprite: Sprite, speed: number, x: number, y: number, transformFn?: TransformerFn | null, rcol?: Color | number, g?: number, b?: number, a?: number): void {
     if (rcol instanceof Color) {
-        drawSprite(sprite,(Shader.internalTimer*speed)%sprite.images.length,x,y,transformFn || null,rcol);
+        drawSprite(sprite,(s.internalTimer*speed)%sprite.images.length,x,y,transformFn || null,rcol);
     } else if (rcol && g && b) {
-        drawSprite(sprite,(Shader.internalTimer*speed)%sprite.images.length,x,y,transformFn || null,rcol,g,b,a);
+        drawSprite(sprite,(s.internalTimer*speed)%sprite.images.length,x,y,transformFn || null,rcol,g,b,a);
     } else if (transformFn) {
-        drawSprite(sprite,(Shader.internalTimer*speed)%sprite.images.length,x,y,transformFn);
+        drawSprite(sprite,(s.internalTimer*speed)%sprite.images.length,x,y,transformFn);
     } else {
-        drawSprite(sprite,(Shader.internalTimer*speed)%sprite.images.length,x,y);
+        drawSprite(sprite,(s.internalTimer*speed)%sprite.images.length,x,y);
     }
 }
 
@@ -280,12 +284,19 @@ function drawSpriteSpeed(sprite: Sprite, speed: number, x: number, y: number, tr
  * @param scaleY Optional scale factor to apply to the sprite vertically
  */
 function drawSpriteCtx(sprite: Sprite, image: number, x: number, y: number, scaleX = 1, scaleY = 1): void {
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     image = Math.floor(image);
     if (!sprite.images[image]) {
         image %= sprite.images.length;
     }
     const i = sprite.images[image];
-    Shader.ctx.drawImage(Shader.atlasImage, i.x-sprite.originX, i.y-sprite.originY, sprite.width, sprite.height, x, y, sprite.width*scaleX, sprite.height*scaleY);
+    if (!s.atlasImage) {
+        throw new Error('Cannot draw a context sprite with no texture loaded.');
+    }
+    ctx.drawImage(s.atlasImage, i.x, i.y, sprite.width, sprite.height, x-sprite.originX, y-sprite.originY, sprite.width*scaleX, sprite.height*scaleY);
 }
 
 /**
@@ -298,7 +309,7 @@ function drawSpriteCtx(sprite: Sprite, image: number, x: number, y: number, scal
  * @param scaleY Optional scale factor to apply to the sprite vertically
  */
 function drawSpriteSpeedCtx(sprite: Sprite, speed: number, x: number, y: number, scaleX = 1, scaleY = 1): void {
-    drawSpriteCtx(sprite,(Shader.internalTimer*speed)%sprite.images.length,x,y,scaleX,scaleY);
+    drawSpriteCtx(sprite,(s.internalTimer*speed)%sprite.images.length,x,y,scaleX,scaleY);
 }
 
 /**
@@ -309,7 +320,10 @@ function drawSpriteSpeedCtx(sprite: Sprite, speed: number, x: number, y: number,
  * @param opt Optional options to control aspects of the drawing, such as alignment, color and font. Defaults to white 10px sans-serif aligned top-left.
  */
 function drawText(x: number, y: number, text: string, opt?: drawTextOptions): void {
-    const ctx = Shader.ctx;
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     ctx.textAlign = opt?.hAlign || 'left';
     ctx.textBaseline = opt?.vAlign || 'top';
     ctx.font = `${opt?.fontSize || 10}px ${opt?.fontName || 'sans-serif'}`;
@@ -330,7 +344,10 @@ function drawText(x: number, y: number, text: string, opt?: drawTextOptions): vo
  * @param opt Optional options to control aspects of the drawing, such as alignment, color, and font. Defaults to white 10px sans-serif aligned top-left.
  */
 function drawTextWrap(x: number, y: number, text: string, width: number, opt?: drawTextOptions) {
-    const ctx = Shader.ctx;
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     const lines: string[] = [];
     let position = 0, lineIndex = 0, current = '';
 
@@ -371,11 +388,11 @@ function drawTextWrap(x: number, y: number, text: string, width: number, opt?: d
 }
 
 function preparePrimitive(positions: number[], rcol: Color | number, g?: number, b?: number, a?: number): void {
-    Shader.primitiveShader.use(new Float32Array(positions));
+    s.shaders.primitive?.use(new Float32Array(positions));
     if (rcol instanceof Color) {
-        Shader.gl.uniform4f(Shader.primitiveShader.blendUniform,rcol.red,rcol.green,rcol.blue,rcol.alpha);
+        s.gl?.uniform4f(s.shaders.primitive?.uniforms.blend || null,rcol.red,rcol.green,rcol.blue,rcol.alpha);
     } else if (g !== undefined && b !== undefined) {
-        Shader.gl.uniform4f(Shader.primitiveShader.blendUniform,rcol,g,b,(a === undefined) ? 1 : a);
+        s.gl?.uniform4f(s.shaders.primitive?.uniforms.blend || null,rcol,g,b,(a === undefined) ? 1 : a);
     } else {
         throw new DrawError(`Illegal color arguments! R: ${rcol}, G: ${g}, B: ${b}, A: ${a}`);
     }

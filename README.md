@@ -303,3 +303,13 @@ Other things to know are that regardless of if you are drawing sprites with GL o
 # Enjoy!
 
 Please reach out to me with any questions, concerns, suggestions, if I made any stupid typos, etc. I look forward to seeing what you can make with supersprite! I hope this document made sense and I did my best to cover everything, and what isn't covered should be self-explanatory or documented but if not, please reach out.
+
+-------
+
+Changes you're gonna make:
+- Well, there has to be a way to use your own shaders along with supersprite. Otherwise it's too limiting beyond only simple projects.
+    - So: supersprite comes with an image and primitive shaders built in, but easy utilities to compile and use more shaders - though you'll have to make gl calls manually in that case
+    - so remove all those redundant and silly options
+    - add functions to make it compile a new shader?
+- extract some stuff from the initialize function so that it becomes even more flexible
+- make a script you can use as a dependency besides just rollup?

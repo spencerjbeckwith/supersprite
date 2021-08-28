@@ -230,6 +230,12 @@ function readPNGs(callback,filepaths,name) {
                     console.error(`Failed to read image ${f} of sprite ${name}!`);
                     callback(err);
                 } else {
+                    if (image.getWidth() > spriteWidth) {
+                        spriteWidth = image.getWidth();
+                    }
+                    if (image.getHeight() > spriteHeight) {
+                        spriteHeight = image.getHeight();
+                    }
                     callback(null,image);
                 }
             });

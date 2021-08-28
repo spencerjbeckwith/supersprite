@@ -1,20 +1,3 @@
-interface ShaderOptions {
-    /** Source for the vertex shader of this program. */
-    vertexSource: string;
-    /** Source for the fragment shader of this program. */
-    fragmentSource: string;
-    /** If true, the shader will attempt to set texture attributes and uniforms. */
-    useTexture: boolean;
-    /** Names of the attributes and uniforms of this program as they appear in the source. */
-    names: {
-        positionAttribute: string;
-        positionUniform: string;
-        blendUniform: string;
-        textureAttribute?: string;
-        textureUniform?: string;
-    }
-}
-
 interface Sprite {
     width: number;
     height: number;
@@ -30,5 +13,22 @@ interface SpriteImage {
     t: [number, number, number, number, number, number, number, number, number];
 }
 
+interface AtlasTextureObject {
+    image: HTMLImageElement; 
+    texture: WebGLTexture;
+}
+
 /** A function to transform sprite matrices. A matrix is provided as an argument, which should be returned with transformations applied via the matrix's methods. */
 type TransformerFn = (mat: Matrix) => Matrix;
+
+interface ShaderAttributes {
+    position: number;
+    texture: number;
+}
+
+interface ShaderUniforms {
+    positionMatrix: WebGLUniformLocation;
+    textureMatrix: WebGLUniformLocation;
+    blend: WebGLUniformLocation;
+    image: WebGLUniformLocation;
+}

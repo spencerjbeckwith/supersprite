@@ -1,19 +1,22 @@
-import Shader from "./shader.js";
 import Color from "./util/color.js";
+import s from './sprite.js';
 function drawLine(x, y, x2, y2, rcol, g, b, a) {
+    var _a;
     const positions = [x, y, x2, y2];
     preparePrimitive(positions, rcol, g, b, a);
-    Shader.gl.drawArrays(Shader.gl.LINES, 0, 2);
+    (_a = s.gl) === null || _a === void 0 ? void 0 : _a.drawArrays(s.gl.LINES, 0, 2);
 }
 function drawRect(x, y, x2, y2, rcol, g, b, a) {
+    var _a;
     const positions = [
         x, y2, x, y, x2, y,
         x2, y, x2, y2, x, y2,
     ];
     preparePrimitive(positions, rcol, g, b, a);
-    Shader.gl.drawArrays(Shader.gl.TRIANGLES, 0, 6);
+    (_a = s.gl) === null || _a === void 0 ? void 0 : _a.drawArrays(s.gl.TRIANGLES, 0, 6);
 }
 function drawCircle(x, y, radius, segments, rcol, g, b, a) {
+    var _a;
     const positions = [x, y];
     // Push each successive segment onto position attribute
     let theta = 0;
@@ -23,54 +26,59 @@ function drawCircle(x, y, radius, segments, rcol, g, b, a) {
         theta += Math.PI * 2 / segments;
     }
     preparePrimitive(positions, rcol, g, b, a);
-    Shader.gl.drawArrays(Shader.gl.TRIANGLE_FAN, 0, segments + 2);
+    (_a = s.gl) === null || _a === void 0 ? void 0 : _a.drawArrays(s.gl.TRIANGLE_FAN, 0, segments + 2);
 }
 function drawPrimitive(mode, positions, rcol, g, b, a) {
+    var _a;
     preparePrimitive(positions, rcol, g, b, a);
-    Shader.gl.drawArrays(mode, 0, positions.length / 2);
+    (_a = s.gl) === null || _a === void 0 ? void 0 : _a.drawArrays(mode, 0, positions.length / 2);
 }
 function drawSprite(sprite, image, x, y, transformFn, rcol, g, b, a) {
-    Shader.imageShader.use();
-    // Limit our image
-    image = Math.floor(image);
-    if (!sprite.images[image]) {
-        image %= sprite.images.length;
+    var _a, _b, _c;
+    if (s.gl && s.shaders.image) {
+        s.shaders.image.use();
+        s.gl.bindTexture(s.gl.TEXTURE_2D, s.atlasTexture);
+        // Limit our image
+        image = Math.floor(image);
+        if (!sprite.images[image]) {
+            image %= sprite.images.length;
+        }
+        // Set position matrix
+        let mat = s.projection.copy().translate(x, y).scale(sprite.width, sprite.height);
+        // Chain more transformations here!
+        if (transformFn) {
+            mat = transformFn(mat);
+        }
+        // Move by sprite's origin - do after transformations so its still relevant in clipspace
+        if (sprite.originX !== 0 || sprite.originY !== 0) {
+            mat.translate(-sprite.originX / sprite.width, -sprite.originY / sprite.height);
+        }
+        s.gl.uniformMatrix3fv(s.shaders.image.uniforms.positionMatrix, false, mat.values);
+        s.gl.uniformMatrix3fv(s.shaders.image.uniforms.textureMatrix, false, sprite.images[image].t);
+        if (rcol instanceof Color) {
+            s.gl.uniform4f(((_a = s.shaders.image) === null || _a === void 0 ? void 0 : _a.uniforms.blend) || null, rcol.red, rcol.green, rcol.blue, rcol.alpha);
+        }
+        else if (rcol !== undefined && g !== undefined && b !== undefined) {
+            s.gl.uniform4f(((_b = s.shaders.image) === null || _b === void 0 ? void 0 : _b.uniforms.blend) || null, rcol, g, b, (a === undefined) ? 1 : a);
+        }
+        else {
+            s.gl.uniform4f(((_c = s.shaders.image) === null || _c === void 0 ? void 0 : _c.uniforms.blend) || null, 1, 1, 1, 1);
+        }
+        s.gl.drawArrays(s.gl.TRIANGLES, 0, 6);
     }
-    // Set position matrix
-    let mat = Shader.projection.copy().translate(x, y).scale(sprite.width, sprite.height);
-    // Chain more transformations here!
-    if (transformFn) {
-        mat = transformFn(mat);
-    }
-    // Move by sprite's origin - do after transformations so its still relevant in clipspace
-    if (sprite.originX !== 0 || sprite.originY !== 0) {
-        mat.translate(-sprite.originX / sprite.width, -sprite.originY / sprite.height);
-    }
-    Shader.gl.uniformMatrix3fv(Shader.imageShader.positionMatrix, false, mat.values);
-    Shader.gl.uniformMatrix3fv(Shader.imageShader.textureMatrix || null, false, sprite.images[image].t);
-    if (rcol instanceof Color) {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform, rcol.red, rcol.green, rcol.blue, rcol.alpha);
-    }
-    else if (rcol !== undefined && g !== undefined && b !== undefined) {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform, rcol, g, b, (a === undefined) ? 1 : a);
-    }
-    else {
-        Shader.gl.uniform4f(Shader.imageShader.blendUniform, 1, 1, 1, 1);
-    }
-    Shader.gl.drawArrays(Shader.gl.TRIANGLES, 0, 6);
 }
 function drawSpriteSpeed(sprite, speed, x, y, transformFn, rcol, g, b, a) {
     if (rcol instanceof Color) {
-        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol);
+        drawSprite(sprite, (s.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol);
     }
     else if (rcol && g && b) {
-        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol, g, b, a);
+        drawSprite(sprite, (s.internalTimer * speed) % sprite.images.length, x, y, transformFn || null, rcol, g, b, a);
     }
     else if (transformFn) {
-        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, transformFn);
+        drawSprite(sprite, (s.internalTimer * speed) % sprite.images.length, x, y, transformFn);
     }
     else {
-        drawSprite(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y);
+        drawSprite(sprite, (s.internalTimer * speed) % sprite.images.length, x, y);
     }
 }
 /**
@@ -83,12 +91,19 @@ function drawSpriteSpeed(sprite, speed, x, y, transformFn, rcol, g, b, a) {
  * @param scaleY Optional scale factor to apply to the sprite vertically
  */
 function drawSpriteCtx(sprite, image, x, y, scaleX = 1, scaleY = 1) {
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     image = Math.floor(image);
     if (!sprite.images[image]) {
         image %= sprite.images.length;
     }
     const i = sprite.images[image];
-    Shader.ctx.drawImage(Shader.atlasImage, i.x - sprite.originX, i.y - sprite.originY, sprite.width, sprite.height, x, y, sprite.width * scaleX, sprite.height * scaleY);
+    if (!s.atlasImage) {
+        throw new Error('Cannot draw a context sprite with no texture loaded.');
+    }
+    ctx.drawImage(s.atlasImage, i.x, i.y, sprite.width, sprite.height, x - sprite.originX, y - sprite.originY, sprite.width * scaleX, sprite.height * scaleY);
 }
 /**
  * Draws an animated sprite on the 2D context. Blending and transformations past scaling are not possible, and the sprite will appear above all regular GL drawing.
@@ -100,7 +115,7 @@ function drawSpriteCtx(sprite, image, x, y, scaleX = 1, scaleY = 1) {
  * @param scaleY Optional scale factor to apply to the sprite vertically
  */
 function drawSpriteSpeedCtx(sprite, speed, x, y, scaleX = 1, scaleY = 1) {
-    drawSpriteCtx(sprite, (Shader.internalTimer * speed) % sprite.images.length, x, y, scaleX, scaleY);
+    drawSpriteCtx(sprite, (s.internalTimer * speed) % sprite.images.length, x, y, scaleX, scaleY);
 }
 /**
  * Draws a line of text on the 2D context.
@@ -110,7 +125,10 @@ function drawSpriteSpeedCtx(sprite, speed, x, y, scaleX = 1, scaleY = 1) {
  * @param opt Optional options to control aspects of the drawing, such as alignment, color and font. Defaults to white 10px sans-serif aligned top-left.
  */
 function drawText(x, y, text, opt) {
-    const ctx = Shader.ctx;
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     ctx.textAlign = (opt === null || opt === void 0 ? void 0 : opt.hAlign) || 'left';
     ctx.textBaseline = (opt === null || opt === void 0 ? void 0 : opt.vAlign) || 'top';
     ctx.font = `${(opt === null || opt === void 0 ? void 0 : opt.fontSize) || 10}px ${(opt === null || opt === void 0 ? void 0 : opt.fontName) || 'sans-serif'}`;
@@ -130,7 +148,10 @@ function drawText(x, y, text, opt) {
  * @param opt Optional options to control aspects of the drawing, such as alignment, color, and font. Defaults to white 10px sans-serif aligned top-left.
  */
 function drawTextWrap(x, y, text, width, opt) {
-    const ctx = Shader.ctx;
+    const ctx = s.ctx;
+    if (!ctx) {
+        throw new Error('Context not initialized!');
+    }
     const lines = [];
     let position = 0, lineIndex = 0, current = '';
     // Figure out the text for each line
@@ -170,12 +191,13 @@ function drawTextWrap(x, y, text, width, opt) {
     }
 }
 function preparePrimitive(positions, rcol, g, b, a) {
-    Shader.primitiveShader.use(new Float32Array(positions));
+    var _a, _b, _c, _d, _e;
+    (_a = s.shaders.primitive) === null || _a === void 0 ? void 0 : _a.use(new Float32Array(positions));
     if (rcol instanceof Color) {
-        Shader.gl.uniform4f(Shader.primitiveShader.blendUniform, rcol.red, rcol.green, rcol.blue, rcol.alpha);
+        (_b = s.gl) === null || _b === void 0 ? void 0 : _b.uniform4f(((_c = s.shaders.primitive) === null || _c === void 0 ? void 0 : _c.uniforms.blend) || null, rcol.red, rcol.green, rcol.blue, rcol.alpha);
     }
     else if (g !== undefined && b !== undefined) {
-        Shader.gl.uniform4f(Shader.primitiveShader.blendUniform, rcol, g, b, (a === undefined) ? 1 : a);
+        (_d = s.gl) === null || _d === void 0 ? void 0 : _d.uniform4f(((_e = s.shaders.primitive) === null || _e === void 0 ? void 0 : _e.uniforms.blend) || null, rcol, g, b, (a === undefined) ? 1 : a);
     }
     else {
         throw new DrawError(`Illegal color arguments! R: ${rcol}, G: ${g}, B: ${b}, A: ${a}`);
