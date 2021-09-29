@@ -312,7 +312,7 @@ init({
     },
     gameTextureParameters: {
         textureMagFilter: 'nearest',
-        textureMinfilter: 'nearest',
+        textureMinFilter: 'nearest',
     }
 });
 ```

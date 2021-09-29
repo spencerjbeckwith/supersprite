@@ -212,13 +212,13 @@ function initialize(options?: SuperspriteOptions): Supersprite {
         }
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter || 'linear') || gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'nearestMipmapLinear') || gl.NEAREST_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(options.gameTextureParameters.textureWrapS || 'repeat') || gl.REPEAT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(options.gameTextureParameters.textureWrapT || 'repeat') || gl.REPEAT);
     } else {
         // Defaults
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     }
@@ -386,10 +386,10 @@ function initialize(options?: SuperspriteOptions): Supersprite {
                 const tex = gl.createTexture();
                 if (!tex) { throw new Error(`Failed to create WebGLTexture!`); }
                 gl.bindTexture(gl.TEXTURE_2D,tex);
-                gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,texParameters?.textureMagFilter || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,texParameters?.textureMinFilter || gl.NEAREST_MIPMAP_LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,texParameters?.textureWrapS || gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,texParameters?.textureWrapT || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texParameters?.textureMagFilter || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texParameters?.textureMinFilter || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texParameters?.textureWrapS || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texParameters?.textureWrapT || gl.REPEAT);
         
                 const image = new Image();
                 image.src = url;
