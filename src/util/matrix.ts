@@ -86,8 +86,8 @@ class Matrix {
 Matrix.projection = function(viewWidth: number, viewHeight: number) : Matrix {
     return new Matrix([
         2/viewWidth, 0, 0,
-        0, -2/viewHeight, 0,
-        -1, 1, 1
+        0, 2/viewHeight, 0,
+        -1, -1, 1
     ]);
 }
 
