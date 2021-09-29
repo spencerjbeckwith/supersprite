@@ -29,6 +29,38 @@ function initialize(options) {
         throw new Error('Failed to initialize 2D canvas context!');
     }
     const main = prepareMainShader(gl, options === null || options === void 0 ? void 0 : options.mainShaderOptions);
+    // Changes the string options into the appropriate GL enums
+    function getGLParameter(str) {
+        switch (str) {
+            case ('linear'): {
+                return gl === null || gl === void 0 ? void 0 : gl.LINEAR;
+            }
+            case ('nearest'): {
+                return gl === null || gl === void 0 ? void 0 : gl.NEAREST;
+            }
+            case ('nearestMipmapNearest'): {
+                return gl === null || gl === void 0 ? void 0 : gl.NEAREST_MIPMAP_NEAREST;
+            }
+            case ('linearMipmapNearest'): {
+                return gl === null || gl === void 0 ? void 0 : gl.LINEAR_MIPMAP_NEAREST;
+            }
+            case ('nearestMipmapLinear'): {
+                return gl === null || gl === void 0 ? void 0 : gl.NEAREST_MIPMAP_LINEAR;
+            }
+            case ('linearMipmapLinear'): {
+                return gl === null || gl === void 0 ? void 0 : gl.LINEAR_MIPMAP_LINEAR;
+            }
+            case ('repeat'): {
+                return gl === null || gl === void 0 ? void 0 : gl.REPEAT;
+            }
+            case ('clampToEdge'): {
+                return gl === null || gl === void 0 ? void 0 : gl.CLAMP_TO_EDGE;
+            }
+            case ('mirroredRepeat'): {
+                return gl === null || gl === void 0 ? void 0 : gl.MIRRORED_REPEAT;
+            }
+        }
+    }
     // Set up gameTexture
     const gameTexture = gl.createTexture();
     if (!gameTexture) {
@@ -37,38 +69,6 @@ function initialize(options) {
     gl.bindTexture(gl.TEXTURE_2D, gameTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, defaultWidth, defaultHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     if (options === null || options === void 0 ? void 0 : options.gameTextureParameters) {
-        // Change the string options into the appropriate GL enums
-        function getGLParameter(str) {
-            switch (str) {
-                case ('linear'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.LINEAR;
-                }
-                case ('nearest'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.NEAREST;
-                }
-                case ('nearestMipmapNearest'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.NEAREST_MIPMAP_NEAREST;
-                }
-                case ('linearMipmapNearest'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.LINEAR_MIPMAP_NEAREST;
-                }
-                case ('nearestMipmapLinear'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.NEAREST_MIPMAP_LINEAR;
-                }
-                case ('linearMipmapLinear'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.LINEAR_MIPMAP_LINEAR;
-                }
-                case ('repeat'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.REPEAT;
-                }
-                case ('clampToEdge'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.CLAMP_TO_EDGE;
-                }
-                case ('mirroredRepeat'): {
-                    return gl === null || gl === void 0 ? void 0 : gl.MIRRORED_REPEAT;
-                }
-            }
-        }
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(options.gameTextureParameters.textureWrapS || 'repeat') || gl.REPEAT);
@@ -224,10 +224,10 @@ function initialize(options) {
                     throw new Error(`Failed to create WebGLTexture!`);
                 }
                 gl.bindTexture(gl.TEXTURE_2D, tex);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, (texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureMagFilter) || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, (texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureMinFilter) || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, (texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureWrapS) || gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, (texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureWrapT) || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter((texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureMagFilter) || 'linear') || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter((texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureMinFilter) || 'linear') || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter((texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureWrapS) || 'repeat') || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter((texParameters === null || texParameters === void 0 ? void 0 : texParameters.textureWrapT) || 'repeat') || gl.REPEAT);
                 const image = new Image();
                 image.src = url;
                 image.addEventListener('load', () => {

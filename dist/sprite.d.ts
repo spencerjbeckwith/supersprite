@@ -107,10 +107,10 @@ interface Supersprite {
     endRender: (transform?: (mat: Matrix) => Matrix, positions?: number[], UVs?: number[]) => void;
     /** Loads a new texture and image element from a provided URL. */
     loadTexture: (url: string, texParameters?: {
-        textureMagFilter?: number;
-        textureMinFilter?: number;
-        textureWrapS?: number;
-        textureWrapT?: number;
+        textureMagFilter?: 'linear' | 'nearest';
+        textureMinFilter?: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear';
+        textureWrapS?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
+        textureWrapT?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
     }) => Promise<AtlasTextureObject>;
     /** Sets the atlasTexture and atlasImage, as returned from loadTexture. Must be called AFTER initializing supersprite, but BEFORE you start drawing. */
     setAtlas: (atlasObject: AtlasTextureObject) => void;

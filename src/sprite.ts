@@ -145,10 +145,10 @@ interface Supersprite {
 
     /** Loads a new texture and image element from a provided URL. */
     loadTexture: (url: string, texParameters?: {
-        textureMagFilter?: number;
-        textureMinFilter?: number;
-        textureWrapS?: number;
-        textureWrapT?: number;
+        textureMagFilter?: 'linear' | 'nearest';
+        textureMinFilter?: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear';
+        textureWrapS?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
+        textureWrapT?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
     }) => Promise<AtlasTextureObject>;
 
     /** Sets the atlasTexture and atlasImage, as returned from loadTexture. Must be called AFTER initializing supersprite, but BEFORE you start drawing. */
@@ -190,27 +190,27 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     if (!ctx) { throw new Error('Failed to initialize 2D canvas context!'); }
     const main = prepareMainShader(gl, options?.mainShaderOptions);
 
+    // Changes the string options into the appropriate GL enums
+    function getGLParameter(str: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear' | 'repeat' | 'clampToEdge' | 'mirroredRepeat'): number | undefined {
+        switch (str) {
+            case ('linear'): { return gl?.LINEAR; }
+            case ('nearest'): { return gl?.NEAREST; }
+            case ('nearestMipmapNearest'): { return gl?.NEAREST_MIPMAP_NEAREST; }
+            case ('linearMipmapNearest'): { return gl?.LINEAR_MIPMAP_NEAREST; }
+            case ('nearestMipmapLinear'): { return gl?.NEAREST_MIPMAP_LINEAR; }
+            case ('linearMipmapLinear'): { return gl?.LINEAR_MIPMAP_LINEAR; }
+            case ('repeat'): { return gl?.REPEAT; }
+            case ('clampToEdge'): { return gl?.CLAMP_TO_EDGE; }
+            case ('mirroredRepeat'): { return gl?.MIRRORED_REPEAT; }
+        }
+    }
+
     // Set up gameTexture
     const gameTexture = gl.createTexture();
     if (!gameTexture) { throw new Error(`Failed to create gameTexture!`); }
     gl.bindTexture(gl.TEXTURE_2D, gameTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, defaultWidth, defaultHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE,null);
     if (options?.gameTextureParameters) {
-        // Change the string options into the appropriate GL enums
-        function getGLParameter(str: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear' | 'repeat' | 'clampToEdge' | 'mirroredRepeat'): number | undefined {
-            switch (str) {
-                case ('linear'): { return gl?.LINEAR; }
-                case ('nearest'): { return gl?.NEAREST; }
-                case ('nearestMipmapNearest'): { return gl?.NEAREST_MIPMAP_NEAREST; }
-                case ('linearMipmapNearest'): { return gl?.LINEAR_MIPMAP_NEAREST; }
-                case ('nearestMipmapLinear'): { return gl?.NEAREST_MIPMAP_LINEAR; }
-                case ('linearMipmapLinear'): { return gl?.LINEAR_MIPMAP_LINEAR; }
-                case ('repeat'): { return gl?.REPEAT; }
-                case ('clampToEdge'): { return gl?.CLAMP_TO_EDGE; }
-                case ('mirroredRepeat'): { return gl?.MIRRORED_REPEAT; }
-            }
-        }
-
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(options.gameTextureParameters.textureWrapS || 'repeat') || gl.REPEAT);
@@ -377,19 +377,19 @@ function initialize(options?: SuperspriteOptions): Supersprite {
         },
 
         loadTexture: function(url: string, texParameters?: {
-            textureMagFilter?: number;
-            textureMinFilter?: number;
-            textureWrapS?: number;
-            textureWrapT?: number;
+            textureMagFilter?: 'linear' | 'nearest';
+            textureMinFilter?: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear';
+            textureWrapS?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
+            textureWrapT?: 'repeat' | 'clampToEdge' | 'mirroredRepeat';
         }): Promise<AtlasTextureObject> {
             return new Promise((resolve, reject) => {
                 const tex = gl.createTexture();
                 if (!tex) { throw new Error(`Failed to create WebGLTexture!`); }
                 gl.bindTexture(gl.TEXTURE_2D,tex);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texParameters?.textureMagFilter || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texParameters?.textureMinFilter || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texParameters?.textureWrapS || gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texParameters?.textureWrapT || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(texParameters?.textureMagFilter || 'linear') || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(texParameters?.textureMinFilter || 'linear') || gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(texParameters?.textureWrapS || 'repeat') || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(texParameters?.textureWrapT || 'repeat') || gl.REPEAT);
         
                 const image = new Image();
                 image.src = url;

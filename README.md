@@ -315,6 +315,15 @@ init({
         textureMinFilter: 'nearest',
     }
 });
+
+// You must also set the proper mips for your texture!
+supersprite.loadTexture('atlas.png',{
+    textureMagFilter: 'nearest',
+    textureMinFilter: 'nearest',
+}).then((obj) => {
+    supersprite.setAtlas(obj);
+    main();
+}).catch(err => console.error)
 ```
 
 # Using Your Own Shaders
@@ -341,7 +350,7 @@ init({
             useTexture: 'u_useTexture',
         },
     }
-})
+});
 ```
 
 After calling `init()` you can locate/set your own uniforms or attributes as needbe, and store them into `shader.uniforms` and `shader.attributes` if you want.
