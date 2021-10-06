@@ -25,10 +25,10 @@ interface MainShader {
     createShader: (type: number, source: string) => WebGLShader;
 
     /** Sets the drawing vertex positions for the next GL draw call. If no argument, will set the positions to the default, a unit quad.*/
-    setPositions: (positions?: number[]) => void;
+    setPositions: (positions?: number[] | Float32Array) => void;
 
     /** Sets the UV texture positions for the next GL draw call. If no argument, will set the positions to the default, a unit quad. */
-    setUVs: (positions?: number[]) => void;
+    setUVs: (positions?: number[] | Float32Array) => void;
 }
 
 /** Contains all attributes */
@@ -184,9 +184,9 @@ function prepareMainShader(gl: WebGL2RenderingContext, options?: MainShaderOptio
     gl.bindVertexArray(vao);
 
     // Load default unit quad into buffer
-    const unitQuad = [0,0, 0,1, 1,1, 1,1, 1,0, 0,0];
+    const unitQuad = new Float32Array([0,0, 0,1, 1,1, 1,1, 1,0, 0,0]);
     gl.bindBuffer(gl.ARRAY_BUFFER, squareBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unitQuad), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, unitQuad, gl.STATIC_DRAW);
 
     // Enable position and texture attributes for this VAO, which will use the square buffer
     gl.enableVertexAttribArray(positionAttribute);
@@ -219,15 +219,23 @@ function prepareMainShader(gl: WebGL2RenderingContext, options?: MainShaderOptio
         },
         createShader: createShader,
         setPositions: function(positions = unitQuad) {
+            if (!(positions instanceof Float32Array)) {
+                positions = new Float32Array(positions);
+            }
+
             gl.enableVertexAttribArray(positionAttribute);
             gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
             gl.vertexAttribPointer(positionAttribute, 2, gl.FLOAT, false, 0, 0);
         },
         setUVs: function(positions = unitQuad) {
+            if (!(positions instanceof Float32Array)) {
+                positions = new Float32Array(positions);
+            }
+
             gl.enableVertexAttribArray(textureAttribute);
             gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
             gl.vertexAttribPointer(textureAttribute, 2, gl.FLOAT, false, 0, 0);
         },
     }

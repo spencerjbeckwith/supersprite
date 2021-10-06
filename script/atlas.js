@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
+import path from 'path';
 import jimp from 'jimp';
 import { BitmapImage, GifUtil } from 'gifwrap';
 import async from 'async';
@@ -66,7 +67,7 @@ import async from 'async';
     Happy game-making! -Spencer
 */
 
-const config = JSON.parse(fs.readFileSync(process.argv[2] || './supersprite.json'));
+const config = JSON.parse(fs.readFileSync(process.argv[2] || path.resolve('./supersprite.json')));
 const sepW = config.separationW || 16;
 const sepH = config.separationH || 16;
 if (!config.outputJS && !config.outputTS && !config.outputJSON) {
@@ -108,7 +109,7 @@ let startTime = Date.now();
 });*/
 
 const tasks = [];
-const directory = fs.opendirSync(config.dir);
+const directory = fs.opendirSync(path.resolve(config.dir));
 let dirent = directory.readSync();
 while (dirent !== null) {
     if (dirent.isDirectory()) {
@@ -283,7 +284,7 @@ function compileAtlas(err, spriteArray) {
 
         // For each sprite...
         for (let s = 0; s < spriteArray.length; s++) {
-            // Get origin X and Y from sprtie's name
+            // Get origin X and Y from sprite's name
             let originX = 0, originY = 0;
             const matches = spriteArray[s].spriteName.match(/_-?[0-9]+/g);
             if (matches !== null && matches.length === 2) {

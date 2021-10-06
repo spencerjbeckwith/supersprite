@@ -1,5 +1,7 @@
 import Color from './util/color.js';
 import Matrix from './util/matrix.js';
+import { PrecalculatedSubdivisions } from './util/subdivide.js';
+
 import { initialize, Supersprite, SuperspriteOptions } from './sprite.js';
 import { Sprite, SpriteImage, Draw, DrawTextOptions } from './draw.js';
 import { MainShader, MainShaderAttributes, MainShaderBuffers, MainShaderUniforms, MainShaderOptions } from './shader.js';
@@ -29,4 +31,5 @@ export {
     MainShaderBuffers,
     MainShaderUniforms,
     MainShaderOptions,
+    PrecalculatedSubdivisions,
 }

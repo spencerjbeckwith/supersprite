@@ -363,8 +363,14 @@ Please reach out to me with any questions, concerns, suggestions, if I made any 
 
 ---
 
+## To do next:
+- Write tests for draw.ts, shader.ts, and sprite.ts
+- PROBLEM USING DIFFERENT SIZE CANVASES
+    - appears to stretch... is viewport set right? does the matrix need to change maybe?
+- supersprite generator, that creates the minimum rollup/supersprite/typescript configuration you need to get started immediately
+- set it up so that you can draw primitives without loading a texture
+
 ## To-do, eventually
 - Compiling of sprite strips
 - Main shader "extensions" of different common effects
     - e.g. palette swap, pixelation, grayscale
-- Some sort of interface for manipulating vertices on the gameTexture itself, to create effects like shockwaves

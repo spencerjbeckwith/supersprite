@@ -2,3 +2,4 @@ node_modules/
 src/
 tsconfig.json
 supersprite.json
+babel.config.cjs

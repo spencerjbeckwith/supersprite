@@ -2,6 +2,8 @@ import Matrix from './util/matrix';
 import Color from './util/color';
 import { prepareMainShader, MainShader, MainShaderOptions }from './shader';
 import { prepareDrawing, Draw } from './draw';
+import { PrecalculatedSubdivisions } from '.';
+import { subdivide, subdivisions } from './util/subdivide';
 
 /** Options object provided to supersprite's initialize() function. */
 interface SuperspriteOptions {
@@ -141,7 +143,7 @@ interface Supersprite {
     beginRender: () => void;
 
     /** Must be called at the end of every frame. The optional transform, positions, and UVs arguments can apply transformations or contortions to the entire gameTexture as its drawn. */
-    endRender: (transform?: (mat: Matrix) => Matrix, positions?: number[], UVs?: number[]) => void;
+    endRender: (transform?: (mat: Matrix) => Matrix, positions?: number[] | Float32Array, UVs?: number[] | Float32Array) => void;
 
     /** Loads a new texture and image element from a provided URL. */
     loadTexture: (url: string, texParameters?: {
@@ -153,6 +155,10 @@ interface Supersprite {
 
     /** Sets the atlasTexture and atlasImage, as returned from loadTexture. Must be called AFTER initializing supersprite, but BEFORE you start drawing. */
     setAtlas: (atlasObject: AtlasTextureObject) => void;
+
+    subdivide: (divisorX: number, divisorY: number) => number[];
+
+    subdivisions: PrecalculatedSubdivisions;
 }
 
 /** Holds all texture/image information required for supersprite to draw it, both in WebGL or on the 2D context. */
@@ -191,18 +197,22 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     const main = prepareMainShader(gl, options?.mainShaderOptions);
 
     // Changes the string options into the appropriate GL enums
-    function getGLParameter(str: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear' | 'repeat' | 'clampToEdge' | 'mirroredRepeat'): number | undefined {
-        switch (str) {
-            case ('linear'): { return gl?.LINEAR; }
-            case ('nearest'): { return gl?.NEAREST; }
-            case ('nearestMipmapNearest'): { return gl?.NEAREST_MIPMAP_NEAREST; }
-            case ('linearMipmapNearest'): { return gl?.LINEAR_MIPMAP_NEAREST; }
-            case ('nearestMipmapLinear'): { return gl?.NEAREST_MIPMAP_LINEAR; }
-            case ('linearMipmapLinear'): { return gl?.LINEAR_MIPMAP_LINEAR; }
-            case ('repeat'): { return gl?.REPEAT; }
-            case ('clampToEdge'): { return gl?.CLAMP_TO_EDGE; }
-            case ('mirroredRepeat'): { return gl?.MIRRORED_REPEAT; }
+    function getGLParameter(str: 'linear' | 'nearest' | 'nearestMipmapNearest' | 'linearMipmapNearest' | 'nearestMipmapLinear' | 'linearMipmapLinear' | 'repeat' | 'clampToEdge' | 'mirroredRepeat' | undefined, defaultTo: number): number {
+        if (gl) {
+            switch (str) {
+                case ('linear'): { return gl.LINEAR; }
+                case ('nearest'): { return gl.NEAREST; }
+                case ('nearestMipmapNearest'): { return gl.NEAREST_MIPMAP_NEAREST; }
+                case ('linearMipmapNearest'): { return gl.LINEAR_MIPMAP_NEAREST; }
+                case ('nearestMipmapLinear'): { return gl.NEAREST_MIPMAP_LINEAR; }
+                case ('linearMipmapLinear'): { return gl.LINEAR_MIPMAP_LINEAR; }
+                case ('repeat'): { return gl.REPEAT; }
+                case ('clampToEdge'): { return gl.CLAMP_TO_EDGE; }
+                case ('mirroredRepeat'): { return gl.MIRRORED_REPEAT; }
+                default: { return defaultTo; }
+            }
         }
+        return defaultTo;
     }
 
     // Set up gameTexture
@@ -211,10 +221,10 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     gl.bindTexture(gl.TEXTURE_2D, gameTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, defaultWidth, defaultHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE,null);
     if (options?.gameTextureParameters) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter || 'linear') || gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'linear') || gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(options.gameTextureParameters.textureWrapS || 'repeat') || gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(options.gameTextureParameters.textureWrapT || 'repeat') || gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter, gl.LINEAR));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter, gl.LINEAR));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(options.gameTextureParameters.textureWrapS, gl.REPEAT));
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(options.gameTextureParameters.textureWrapT, gl.REPEAT));
     } else {
         // Defaults
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -260,6 +270,8 @@ function initialize(options?: SuperspriteOptions): Supersprite {
         atlasTexture: null,
         framebuffer: framebuffer,
         draw: prepareDrawing(gl, ctx, main, projection, internalTimer),
+        subdivide: subdivide,
+        subdivisions: subdivisions,
 
         // Initial view properties
         projection: projection,
@@ -342,7 +354,7 @@ function initialize(options?: SuperspriteOptions): Supersprite {
             if (this.internalTimer.current > 4096) { this.internalTimer.current = 0; }
         },
 
-        endRender: function(transform?: (mat: Matrix) => Matrix, positions?: number[], UVs?: number[]) {
+        endRender: function(transform?: (mat: Matrix) => Matrix, positions?: number[] | Float32Array, UVs?: number[] | Float32Array) {
             // Call at the end of each frame
     
             // Switch to correct framebuffer and texture
@@ -373,7 +385,7 @@ function initialize(options?: SuperspriteOptions): Supersprite {
             gl.uniform1i(main.uniforms.useTexture,1);
 
             // Draw!
-            gl.drawArrays(gl.TRIANGLES,0,6);
+            gl.drawArrays(gl.TRIANGLES,0, positions ? positions.length/2 : 6);
         },
 
         loadTexture: function(url: string, texParameters?: {
@@ -386,10 +398,10 @@ function initialize(options?: SuperspriteOptions): Supersprite {
                 const tex = gl.createTexture();
                 if (!tex) { throw new Error(`Failed to create WebGLTexture!`); }
                 gl.bindTexture(gl.TEXTURE_2D,tex);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(texParameters?.textureMagFilter || 'linear') || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(texParameters?.textureMinFilter || 'linear') || gl.LINEAR);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(texParameters?.textureWrapS || 'repeat') || gl.REPEAT);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(texParameters?.textureWrapT || 'repeat') || gl.REPEAT);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(texParameters?.textureMagFilter, gl.LINEAR));
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(texParameters?.textureMinFilter, gl.LINEAR));
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, getGLParameter(texParameters?.textureWrapS, gl.REPEAT));
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, getGLParameter(texParameters?.textureWrapT, gl.REPEAT));
         
                 const image = new Image();
                 image.src = url;

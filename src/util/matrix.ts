@@ -1,13 +1,11 @@
 /** Each matrix's value array is nine values, forming a 3x3 matrix. */
 type M3 = [ number, number, number, number, number, number, number, number, number ];
+type V3 = [ number, number, number ];
 
 /** Allows for transformations by chaining different functions onto existing Matrices. */
 class Matrix {
-    values: M3;
     static identity: M3;
-    constructor(values: M3) {
-        this.values = values;
-    }
+    constructor(public values: M3) {}
 
     /** Returns a new projection Matrix based on the provided view dimensions. Should only be called when the view size changes. */
     static projection: (viewWidth: number, viewHeight: number) => Matrix;
@@ -51,6 +49,17 @@ class Matrix {
         ];
 
         return this;
+    }
+
+    /** Multiplies this matrix by a vec3 and returns the result as three-index array. */
+    multiplyVec3(vec3: V3): V3 {
+        const values: V3 = [
+            this.values[0] * vec3[0] + this.values[3] * vec3[1] + this.values[6] * vec3[2],
+            this.values[1] * vec3[0] + this.values[4] * vec3[1] + this.values[7] * vec3[2],
+            this.values[2] * vec3[0] + this.values[5] * vec3[1] + this.values[8] * vec3[2],
+        ];
+
+        return values;
     }
 
     /** Translates this matrix and returns itself, to allow multiple chained transformations. Note that this does not translate the matrix by PIXELS, but by factors of the sprite's width and height. So, to translate one full sprite width to the right, you'd use "translate(1,0)" */
