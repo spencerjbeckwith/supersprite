@@ -9,13 +9,13 @@ interface SuperspriteOptions {
     /** The initial width of the canvas. Default 400. */
     displayWidth?: number;
 
-    /** The initial height of the canvas. Default 200. */
+    /** The initial height of the canvas. Default 240. */
     displayHeight?: number;
 
     /** The initial width of the game view, which will stretch to fill the canvas if it does not match displayWidth. Default 400. */
     viewWidth?: number;
 
-    /** The initial height of the game view, which will stretch to fill the canvas if it does not match displayHeight. Default 200. */
+    /** The initial height of the game view, which will stretch to fill the canvas if it does not match displayHeight. Default 240. */
     viewHeight?: number;
 
     /** Options object for the WebGL context. No default provided. */
@@ -178,8 +178,10 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     document.body.appendChild(cv2);
     
     // Size canvases appropriately
-    cv1.width = options?.displayWidth || options?.viewWidth || window.innerWidth;
-    cv1.height = options?.displayHeight || options?.viewHeight || window.innerHeight;
+    const baseWidth = options?.displayWidth || options?.viewWidth || window.innerWidth;
+    const baseHeight = options?.displayHeight || options?.viewHeight || window.innerHeight;
+    cv1.width = baseWidth;
+    cv1.height = baseHeight;
     cv2.width = cv1.width;
     cv2.height = cv1.height;
 
@@ -209,7 +211,7 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     const gameTexture = gl.createTexture();
     if (!gameTexture) { throw new Error(`Failed to create gameTexture!`); }
     gl.bindTexture(gl.TEXTURE_2D, gameTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, defaultWidth, defaultHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE,null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, baseWidth, baseHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE,null);
     if (options?.gameTextureParameters) {
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, getGLParameter(options.gameTextureParameters.textureMagFilter || 'linear') || gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, getGLParameter(options.gameTextureParameters.textureMinFilter || 'linear') || gl.LINEAR);
@@ -240,7 +242,7 @@ function initialize(options?: SuperspriteOptions): Supersprite {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
 
-    const projection = Matrix.projection(400, 240);
+    const projection = Matrix.projection(baseWidth, baseHeight);
     const internalTimer = { current: 0 };
 
     // Create return object
