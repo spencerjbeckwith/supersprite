@@ -1,7 +1,7 @@
-import Matrix from './util/matrix';
-import Color from './util/color';
-import { prepareMainShader, MainShader, MainShaderOptions }from './shader';
-import { prepareDrawing, Draw } from './draw';
+import Matrix from './util/matrix.js';
+import Color from './util/color.js';
+import { prepareMainShader, MainShader, MainShaderOptions }from './shader.js';
+import { prepareDrawing, Draw } from './draw.js';
 
 /** Options object provided to supersprite's initialize() function. */
 interface SuperspriteOptions {

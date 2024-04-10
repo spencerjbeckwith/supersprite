@@ -259,7 +259,7 @@ function prepareDrawing(gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2
         },
 
         primitive: function(mode: 'points' | 'lineStrip' | 'lineLoop' | 'lines' | 'triangleStrip' | 'triangleFan' | 'triangles', positions: number[], color: Color | number[]) {
-            let glEnum = gl.TRIANGLES;
+            let glEnum: number = gl.TRIANGLES;
             switch (mode) {
                 case ('points'): { glEnum = gl.POINTS; break; }
                 case ('lineStrip'): { glEnum = gl.LINE_STRIP; break; }

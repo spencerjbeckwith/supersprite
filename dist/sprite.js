@@ -1,7 +1,7 @@
-import Matrix from './util/matrix';
-import Color from './util/color';
-import { prepareMainShader } from './shader';
-import { prepareDrawing } from './draw';
+import Matrix from './util/matrix.js';
+import Color from './util/color.js';
+import { prepareMainShader } from './shader.js';
+import { prepareDrawing } from './draw.js';
 const defaultWidth = 400;
 const defaultHeight = 240;
 /** Initializes supersprite. This must be called before loading textures or drawing anything. */

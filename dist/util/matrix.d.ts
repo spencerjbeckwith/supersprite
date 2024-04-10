@@ -1,5 +1,5 @@
 /** Each matrix's value array is nine values, forming a 3x3 matrix. */
-declare type M3 = [number, number, number, number, number, number, number, number, number];
+type M3 = [number, number, number, number, number, number, number, number, number];
 /** Allows for transformations by chaining different functions onto existing Matrices. */
 declare class Matrix {
     values: M3;

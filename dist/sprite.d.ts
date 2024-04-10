@@ -1,7 +1,7 @@
-import Matrix from './util/matrix';
-import Color from './util/color';
-import { MainShader, MainShaderOptions } from './shader';
-import { Draw } from './draw';
+import Matrix from './util/matrix.js';
+import Color from './util/color.js';
+import { MainShader, MainShaderOptions } from './shader.js';
+import { Draw } from './draw.js';
 /** Options object provided to supersprite's initialize() function. */
 interface SuperspriteOptions {
     /** The initial width of the canvas. Default 400. */
