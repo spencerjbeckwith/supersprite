@@ -4,6 +4,7 @@ import fs from 'fs';
 import jimp from 'jimp';
 import { BitmapImage, GifUtil } from 'gifwrap';
 import async from 'async';
+import path from "path";
 
 /*
     NOTES FOR USING THIS SCRIPT
@@ -113,20 +114,20 @@ let dirent = directory.readSync();
 while (dirent !== null) {
     if (dirent.isDirectory()) {
         // Read inner directory
-        const innerDirectory = fs.opendirSync(`${config.dir}\\${dirent.name}`);
+        const innerDirectory = fs.opendirSync(path.join(config.dir, dirent.name));
         let innerDirent = innerDirectory.readSync();
         const filepaths = [];
         while (innerDirent !== null) {
             if (innerDirent.isFile()) {
                 if (innerDirent.name.toLowerCase().endsWith('.gif')) {
                     // Read this GIF as its own sprite
-                    let currentName = innerDirent.name, currentPath = `${config.dir}\\${dirent.name}\\${innerDirent.name}`;
+                    let currentName = innerDirect.name, currentPath = path.join(config.dir, dirent.name, innerDirent.name);
                     tasks.push((callback) => {
                         readGif(callback,currentPath,currentName);
                     });
                 } else if (innerDirent.name.toLowerCase().endsWith('.png')) {
                     // Read this PNG as one image of a sprite for this folder - add to our paths
-                    filepaths.push(`${config.dir}\\${dirent.name}\\${innerDirent.name}`);
+                    filepaths.push(path.join(config.dir, dirent.name, innerDirent.name));
                 }
             }
             innerDirent = innerDirectory.readSync();
@@ -145,13 +146,13 @@ while (dirent !== null) {
             // Read this gif from top-level directory
             let currentName = dirent.name;
             tasks.push((callback) => {
-                readGif(callback,`${config.dir}\\${currentName}`,currentName);
+                readGif(callback,path.join(config.dir, currentName),currentName);
             });
         } else if (dirent.name.toLowerCase().endsWith('.png')) {
             // Read png for a single-image sprite
             let currentName = dirent.name;
             tasks.push((callback) => {
-                readPNGs(callback,[`${config.dir}\\${currentName}`],currentName);
+                readPNGs(callback,[path.join(config.dir, currentName)],currentName);
             });
         }
     }
@@ -196,6 +197,16 @@ function readGif(callback,filepath,name) {
                 console.error(`Failed to load all images of sprite ${name}!`);
                 callback(err);
             } else {
+
+                if (!config.transparent || !config.transparent.red || !config.transparent.green || !config.transparent.blue) {
+                    console.warn("No transparent color specified for loading GIFs. Defaulting to black.");
+                    config.transparent = {
+                        red: 0,
+                        green: 0,
+                        blue: 0,
+                    };
+                }
+
                 for (let i = 0; i < imageArray.length; i++) {
                     imageArray[i].scan(0,0,gif.width,gif.height,function(x, y, idx) {
                         // Make colors matching our remove color transparent, as gifs don't support transparency

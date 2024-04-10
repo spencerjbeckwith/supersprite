@@ -365,6 +365,7 @@ Please reach out to me with any questions, concerns, suggestions, if I made any 
 
 ## To-do, eventually
 - Compiling of sprite strips
+- Massive refactor and documentation of atlas script
 - Main shader "extensions" of different common effects
     - e.g. palette swap, pixelation, grayscale
 - Some sort of interface for manipulating vertices on the gameTexture itself, to create effects like shockwaves
