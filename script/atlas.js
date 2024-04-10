@@ -170,23 +170,31 @@ function readGif(callback,filepath,name) {
         for (let f = 0; f < gif.frames.length; f++) {
             tasks.push((callback) => {
                 const frame = gif.frames[f];
-                if (frame.disposalMethod !== 1) {
-                    console.warn(`Unexpected disposal method ${frame.disposalMethod} in frame ${f} of ${name}!`);
+                if (frame.disposalMethod === 1) {
+                    // For some gifs, we need to layer changes on sequentially as not every frame is present
+                    frame.reframe(-frame.xOffset, -frame.yOffset, gif.width, gif.height, 0x000000);
+
+                    const jimpImage = new jimp(1,1,0);
+                    jimpImage.bitmap = frame.bitmap;
+                    if (!lastFrame) {
+                        // Begin on our first frame as just one image, no compositing
+                        lastFrame = new jimp(1,1,0);
+                        lastFrame.bitmap = (new BitmapImage(frame)).bitmap;
+                        callback(null, jimpImage);
+                    } else {
+                        // Composite each image after the first, on top of the preceeding image - so the changes stack properly between gif frames
+                        lastFrame.composite(jimpImage,0,0);
+                        callback(null, lastFrame.clone()); // Clone image, so async isn't returning pointers to the same image every iteration
+                    }
                 }
-
-                frame.reframe(-frame.xOffset, -frame.yOffset, gif.width, gif.height, 0x000000);
-
-                const jimpImage = new jimp(1,1,0);
-                jimpImage.bitmap = frame.bitmap;
-                if (!lastFrame) {
-                    // Begin on our first frame as just one image, no compositing
-                    lastFrame = new jimp(1,1,0);
-                    lastFrame.bitmap = (new BitmapImage(frame)).bitmap;
+                else if (frame.disposalMethod === 2) {
+                    // And for other gifs, instead of compositing one frame onto the next, create entirely new bitmaps for each frame (as each full frame is present)
+                    const jimpImage = new jimp(1,1,0);
+                    jimpImage.bitmap = frame.bitmap;
                     callback(null, jimpImage);
-                } else {
-                    // Composite each image after the first, on top of the preceeding image - so the changes stack properly between gif frames
-                    lastFrame.composite(jimpImage,0,0);
-                    callback(null, lastFrame.clone()); // Clone image, so async isn't returning pointers to the same image every iteration
+                }
+                else {
+                    throw new Error(`Unexpected disposal method ${frame.disposalMethod} in frame ${f} of ${name}!`);
                 }
             });
         }
