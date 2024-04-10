@@ -6,11 +6,11 @@ import { Draw } from './draw.js';
 interface SuperspriteOptions {
     /** The initial width of the canvas. Default 400. */
     displayWidth?: number;
-    /** The initial height of the canvas. Default 200. */
+    /** The initial height of the canvas. Default 240. */
     displayHeight?: number;
     /** The initial width of the game view, which will stretch to fill the canvas if it does not match displayWidth. Default 400. */
     viewWidth?: number;
-    /** The initial height of the game view, which will stretch to fill the canvas if it does not match displayHeight. Default 200. */
+    /** The initial height of the game view, which will stretch to fill the canvas if it does not match displayHeight. Default 240. */
     viewHeight?: number;
     /** Options object for the WebGL context. No default provided. */
     glOptions?: WebGLContextAttributes;
