@@ -1,5 +1,25 @@
 # supersprite
 
+# TODO: V3
+- Rebuild application
+- Add tests
+- Refactor atlas script
+- Github actions
+- Write rollup and webpack examples
+
+main classes:
+- Core: clean user-facing API
+- Batcher: owner of the draw queue, responsible for cleanly and effectively batching draw orders into as few GL calls as possible
+- Transformer: chained on draw orders to rotate, transform, or scale
+- Presenter: manages the HTML canvases
+- Colorizer: chained on draw orders to blend or palette swap
+
+base classes:
+- Color
+- Shader
+
+===
+
 supersprite is a sprite drawing engine for 2D browser games compatible with both JavaScript and TypeScript. It greatly simplifies the process of setting up your WebGL2 context, loading textures, compiling shaders, etc. when all you want to do is get some images on screen. As opposed to just using a 2D context and its `drawImage` method, supersprite provides a fast, powerful, and intuitive drawing system that is made possible by WebGL, while still keeping the simplicity of singular, self-contained draw calls.
 
 I made this because I like to make a lot of 2D low-res pixel-art games, and the canvas 2D context just wasn't really doing it for me. I set up so many different projects using the same methods I figure I may as well make it an npm package to make my life a bit easier, and hopefully others can find it useful.
