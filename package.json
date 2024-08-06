@@ -20,6 +20,7 @@
     "jimp": "^0.22.12"
   },
   "scripts": {
+    "build": "tsc",
     "test": "cross-env TS_NODE_PROJECT=config/tsconfig.test.json mocha --config config/.mocharc.json",
     "coverage": "nyc npm run test"
   },
