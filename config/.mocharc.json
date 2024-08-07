@@ -5,6 +5,7 @@
     "spec": "src/**/*.spec.ts",
     "require": [
       "ts-node/register",
-      "global-jsdom/register"
+      "global-jsdom/register",
+      "webgl-mock"
     ]
 }

@@ -3,3 +3,4 @@ src/
 tsconfig.json
 supersprite.json
 examples/
+config/

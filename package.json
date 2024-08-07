@@ -44,7 +44,8 @@
     "nyc": "^17.0.0",
     "sinon": "^18.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.4"
+    "typescript": "^5.4.4",
+    "webgl-mock": "github:spencerjbeckwith/webgl-mock"
   },
   "nyc": {
     "exclude": [
