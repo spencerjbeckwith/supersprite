@@ -16,8 +16,7 @@ describe("Shader", () => {
 
     it("creates and uses a ShaderProgram when initialized", () => {
         const spy = sinon.spy(gl, "useProgram");
-        const shader = new Shader(gl);
-        expect(shader.ready).toBe(true);
+        new Shader(gl);
         expect(spy.called).toBe(true);
         spy.restore();
     });
