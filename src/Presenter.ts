@@ -196,4 +196,5 @@ export class Presenter {
     }
 }
 
+/** Describes issues with the canvases or their rendering contexts */
 export class PresenterError extends Error {};
