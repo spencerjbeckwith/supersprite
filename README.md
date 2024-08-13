@@ -11,12 +11,7 @@ main classes:
 - Core: clean user-facing API
 - Batcher: owner of the draw queue, responsible for cleanly and effectively batching draw orders into as few GL calls as possible
 - Transformer: chained on draw orders to rotate, transform, or scale
-- Presenter: manages the HTML canvases
 - Colorizer: chained on draw orders to blend or palette swap
-
-base classes:
-- Color
-- Shader
 
 ===
 
