@@ -3,8 +3,15 @@ import expect from "expect";
 import sinon from "sinon";
 
 describe("Presenter", () => {
+    let s: sinon.SinonStub;
+    before(() => {
+        s = sinon.stub(window.HTMLCanvasElement.prototype, "getContext");
+        s.returns({});
+    });
 
-    const e = new window.Event("resize");
+    after(() => {
+        s.restore();
+    });
 
     it("throws if neither dimensions nor canvases are provided", () => {
         expect(() => {
@@ -22,27 +29,38 @@ describe("Presenter", () => {
         }).toThrow(PresenterError);
     });
 
-    it("throws if unable to initialize GL or 2d contexts", () => {
-        const c1 = document.createElement("canvas");
-        c1.getContext = () => null;
+    it("throws if canvas sizes are ambiguous", () => {
         expect(() => {
             new Presenter({
-                glCanvas: c1,
+                baseWidth: 10,
+            });
+        }).toThrow(PresenterError);
+    });
+
+    it("throws if unable to initialize WebGL2 context", () => {
+        const c = document.createElement("canvas");
+        c.getContext = () => null;
+        expect(() => {
+            new Presenter({
+                glCanvas: c,
                 ctxCanvas: null,
             });
         }).toThrow(PresenterError);
-        const c2 = document.createElement("canvas");
-        c2.getContext = () => null;
+    });
+
+    it("throws if unable to initialize 2D context", () => {
+        const c = document.createElement("canvas");
+        c.getContext = () => null;
         expect(() => {
             new Presenter({
                 glCanvas: document.createElement("canvas"),
-                ctxCanvas: c2,
+                ctxCanvas: c,
             });
         }).toThrow(PresenterError);
     });
 
     it("creates and adds canvases to the document", () => {
-        const s = sinon.spy(document, "appendChild");
+        const s = sinon.spy(document.body, "appendChild");
         new Presenter({
             baseWidth: 320,
             baseHeight: 240,
@@ -58,7 +76,7 @@ describe("Presenter", () => {
         });
         window.innerWidth = 250;
         window.innerHeight = 250;
-        window.dispatchEvent(e);
+        p.resize();
         expect(p.currentWidth).toBe(200);
         expect(p.currentHeight).toBe(200);
     });
@@ -71,7 +89,7 @@ describe("Presenter", () => {
         });
         window.innerWidth = 500;
         window.innerHeight = 800;
-        window.dispatchEvent(e);
+        p.resize();
         expect(p.currentWidth).toBe(500);
         expect(p.currentHeight).toBe(250);
     });
@@ -84,7 +102,7 @@ describe("Presenter", () => {
         });
         window.innerWidth = 600;
         window.innerHeight = 500;
-        window.dispatchEvent(e);
+        p.resize();
         expect(p.currentWidth).toBe(600);
         expect(p.currentHeight).toBe(500);
     });
@@ -97,8 +115,25 @@ describe("Presenter", () => {
         });
         window.innerWidth = 400;
         window.innerHeight = 400;
-        window.dispatchEvent(e);
+        p.resize();
         expect(p.currentWidth).toBe(200);
         expect(p.currentHeight).toBe(100);
+    });
+
+    it("calls onResize when resized", () => {
+        const fake = sinon.fake();
+        const p = new Presenter({
+            baseWidth: 100,
+            baseHeight: 100,
+            onResize: fake,
+        });
+        window.innerWidth = 300;
+        window.innerHeight = 300;
+        p.resize();
+        expect(fake.called).toBe(true);
+        
+        // We want to check the second call, since resize() is called when the object is first created
+        expect(fake.getCalls()[1].firstArg).toBe(300);
+        expect(fake.getCalls()[1].lastArg).toBe(300);
     });
 });

@@ -1,15 +1,3 @@
-
-export type zGLTextureParameter =
-    | "LINEAR"
-    | "NEAREST"
-    | "NEAREST_MIPMAP_NEAREST"
-    | "LINEAR_MIPMAP_NEAREST"
-    | "NEAREST_MIPMAP_LINEAR"
-    | "LINEAR_MIPMAP_LINEAR"
-    | "REPEAT"
-    | "CLAMP_TO_EDGE"
-    | "MIRRORED_REPEAT";
-
 export type Responsiveness = "static" | "stretch" | "scale";
 
 /** Options to configure the Presenter */
@@ -49,38 +37,162 @@ export interface PresenterOptions {
     /** If the 2D rendering context should have smoothing enabled or not. If the 2D context is disabled this has no effect. Defaults to false. */
     ctxSmoothingEnabled?: boolean;
 
-    /** If `responsiveness` is set to `scale`, this ensures that the canvases will only scale to whole numbers, preventing bizarre visual artifacts and distortions from fractional pixels.
+    /**
+     * If `responsiveness` is set to `scale`, this ensures that the canvases will only scale to whole numbers, preventing bizarre visual artifacts and distortions from fractional pixels.
      * 
      * If `responsiveness` is not set to `scale`, this has no effect. Defaults to true.
      */
     scalePerfectly?: boolean;
+
+    /** Callback when the canvas is resized. Note that if `responsiveness` is set to `static` this will never be called. */
+    onResize?: ((newWidth: number, newHeight: number) => void) | undefined;
 }
 
 /** Manages the HTML canvases and their rendering contexts */
 export class Presenter {
 
-    //options: Required<PresenterOptions>;
+    /** Options used to create this Presenter, including default values */
+    options: Required<PresenterOptions>;
 
-    //gl: WebGL2RenderingContext;
-    //ctx: CanvasRenderingContext2D;
+    /** GL rendering context from the GL canvas */
+    gl: WebGL2RenderingContext;
+
+    /** 2D rendering context from the 2D canvas. Will be null if the 2D context is disabled by setting `options.ctxCanvas` to null. */
+    ctx: CanvasRenderingContext2D | null;
+
+    /** Factor of horizontal scaling currently applied to the canvases. If `responsiveness` is set to `static` this will always be 1. */
+    scaleX: number;
+
+    /** Factor of vertical scaling currently applied to the canvases. If `responsiveness` is set to `static` this will always be 1. */
+    scaleY: number;
 
     constructor(options: PresenterOptions) {
-        //this.options = options;
+        if (!options.baseWidth && !options.baseHeight && !options.glCanvas) {
+            throw new PresenterError("Presenter must be initialized with either A) baseWidth and baseHeight or B) glCanvas specified.");
+        }
+        if (options.ctxCanvas && options.glCanvas === options.ctxCanvas) {
+            throw new PresenterError("glCanvas and ctxCanvas must not be the same HTML element.");
+        }
+
+        const baseWidth = options.baseWidth ?? options.glCanvas?.width;
+        const baseHeight = options.baseHeight ?? options.glCanvas?.height;
+        if (!baseWidth || !baseHeight) {
+            throw new PresenterError("Unable to determine base dimensions. Make sure either that both baseWidth and baseHeight are set, or the glCanvas is specified.");
+        }
+
+        let glCanvas: HTMLCanvasElement;
+        const centerAndLayerCSS = "position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); overflow: hidden;";
+        if (!options.glCanvas) {
+            // Create a GL canvas
+            glCanvas = document.createElement("canvas");
+            glCanvas.setAttribute("style", centerAndLayerCSS);
+            document.body.appendChild(glCanvas);
+        } else {
+            // Use pre-existing canvas
+            glCanvas = options.glCanvas;
+        }
+
+        let ctxCanvas: HTMLCanvasElement | null = null;
+        if (!options.ctxCanvas) {
+            // Create a 2D canvas
+            ctxCanvas = document.createElement("canvas");
+            ctxCanvas.setAttribute("style", centerAndLayerCSS);
+            document.body.appendChild(ctxCanvas);
+        } else {
+            if (options.ctxCanvas !== null) {
+                // Use pre-existing canvas
+                ctxCanvas = options.ctxCanvas;
+            }
+        }
+
+        this.scaleX = 1;
+        this.scaleY = 1;
+
+        this.options = {
+            baseWidth,
+            baseHeight,
+            glCanvas,
+            ctxCanvas,
+            responsiveness: options.responsiveness ?? "scale",
+            ctxSmoothingEnabled: options.ctxSmoothingEnabled ?? false,
+            scalePerfectly: options.scalePerfectly ?? true,
+            onResize: options.onResize ?? (() => {}),
+        };
+
+        // Create our contexts
+        const gl = glCanvas.getContext("webgl2");
+        if (!gl) {
+            throw new PresenterError("Failed to initialize WebGL2 context!");
+        }
+
+        let ctx: CanvasRenderingContext2D | null = null;
+        if (ctxCanvas !== null) {
+            ctx = ctxCanvas.getContext("2d");
+            if (!ctx) {
+                throw new PresenterError("Failed to initialize 2D canvas context!");
+            }
+        }
+
+        this.gl = gl;
+        this.ctx = ctx;
+
+        if (this.options.responsiveness !== "static") {
+            window.addEventListener("resize", this.resize);
+            window.addEventListener("orientationchange", this.resize);
+            this.resize();
+        }
     }
 
     /** Resizes the canvases according its options and the new size of the window */
     resize() {
+        switch (this.options.responsiveness) {
+            case ("stretch"): {
+                // Fill up all available space
+                this.scaleX = window.innerWidth / this.options.baseWidth;
+                this.scaleY = window.innerHeight / this.options.baseHeight;
+                break;
+            }
+            case ("scale"): {
+                // Maintain our aspect ratio
+                let scale = 1;
+                if (window.innerWidth > window.innerHeight) {
+                    scale = window.innerHeight / this.options.baseHeight;
+                } else {
+                    scale = window.innerWidth / this.options.baseWidth;
+                }
+                scale = Math.max(scale, 1);
+                if (this.options.scalePerfectly) {
+                    scale = Math.floor(scale);
+                }
+                this.scaleX = scale;
+                this.scaleY = scale;
+                break;
+            }
+            default: break;
+        }
 
+        // Resize our canvases
+        const width = this.currentWidth;
+        const height = this.currentHeight;
+        this.options.glCanvas.width = width;
+        this.options.glCanvas.height = height;
+        if (this.options.ctxCanvas) {
+            this.options.ctxCanvas.width = width;
+            this.options.ctxCanvas.height = height;
+        }
+
+        // Call our callback
+        this.options.onResize(width, height);
     }
 
     /** Current width of the canvases, accounting for scaling */
     get currentWidth(): number {
-        return 0;
+        return this.options.baseWidth * this.scaleX;
     }
 
     /** Current height of the canvases, accounting for scaling */
     get currentHeight(): number {
-        return 0;
+        return this.options.baseHeight * this.scaleY;
     }
 }
 
