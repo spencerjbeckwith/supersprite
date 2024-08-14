@@ -25,13 +25,13 @@ export interface SpriteImage {
 }
 
 export type GLDrawModes =
-    | "points"
-    | "lineStrip"
-    | "lineLoop"
-    | "lines"
-    | "triangleStrip"
-    | "triangleFan"
-    | "triangles";
+    | "POINTS"
+    | "LINE_STRIP"
+    | "LINE_LOOP"
+    | "LINES"
+    | "TRIANGLE_STRIP"
+    | "TRIANGLE_FAN"
+    | "TRIANGLES";
 
 export interface DrawTextOptions {
     /** Horizontal alignment of the drawn text */
@@ -116,6 +116,12 @@ export class Draw {
             lineBreakCharacters: defaults?.lineBreakCharacters ?? / |\/|\\|-/g
         };
     }
+
+    /** Prepares to draw a primitive shape with the provided vertex positions */
+    preparePrimitive(positions: number[], color?: Color) {
+        // TODO draw.preparePrimitive
+    }
+
 
     /** 
      * Draws a line between (`x`, `y`) and (`x2`, `y2`).

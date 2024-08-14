@@ -1,7 +1,7 @@
 import defaultVertexSource from "./shaders/vertex";
 import defaultFragmentSource from "./shaders/fragment";
 
-export const UNIT_QUAD = new Float32Array([
+export const UNIT_QUAD = [
     // Triangle 1:
     0, 0,
     0, 1,
@@ -10,7 +10,7 @@ export const UNIT_QUAD = new Float32Array([
     1, 1,
     1, 0,
     0, 0,
-]);
+];
 
 /** Primary WebGL initializer and controller, responsible for creating and interacting with the shader program through its attributes and uniforms */
 export class Shader {
@@ -110,7 +110,7 @@ export class Shader {
 
         // Load default unit quad into buffer
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.square);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, UNIT_QUAD, this.gl.STATIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(UNIT_QUAD), this.gl.STATIC_DRAW);
 
         // Enable position and texture attributes for this VAO, which will always use the square when bound
         this.gl.enableVertexAttribArray(this.attributes.position);
@@ -168,15 +168,15 @@ export class Shader {
     setPositions(positions = UNIT_QUAD) {
         this.gl.enableVertexAttribArray(this.attributes.position);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.position);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.DYNAMIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.DYNAMIC_DRAW);
         this.gl.vertexAttribPointer(this.attributes.position, 2, this.gl.FLOAT, false, 0, 0);
     }
 
     /** Sets the UV texture positions for the next GL draw call. If no argument is provided, the UVs default to a unit quad (a square). */
-    setUVs(uvs = UNIT_QUAD) {
+    setUVs(UVs = UNIT_QUAD) {
         this.gl.enableVertexAttribArray(this.attributes.texture);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.texture);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, uvs, this.gl.DYNAMIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(UVs), this.gl.DYNAMIC_DRAW);
         this.gl.vertexAttribPointer(this.attributes.texture, 2, this.gl.FLOAT, false, 0, 0);
     }
 
