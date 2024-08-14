@@ -96,8 +96,8 @@ export class Shader {
             positionMatrix: this.getUniform("u_position_matrix"),
             textureMatrix: this.getUniform("u_texture_matrix"),
             atlas: this.getUniform("u_atlas"),
-            blend: this.getUniform("blend"),
-            textured: this.getUniform("textured"),
+            blend: this.getUniform("u_blend"),
+            textured: this.getUniform("u_textured"),
         }
 
         // Set up the VAO
@@ -159,7 +159,7 @@ export class Shader {
     getUniform(name: string): WebGLUniformLocation {
         const u = this.gl.getUniformLocation(this.program, name);
         if (!u) {
-            throw new ShaderError(`Failed to location shader uniform: ${name}`);
+            throw new ShaderError(`Failed to locate shader uniform: ${name}`);
         }
         return u;
     }
