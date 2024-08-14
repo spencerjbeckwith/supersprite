@@ -92,7 +92,8 @@ class Spy {
 describe("Draw", () => {
 
     const spy = new Spy();
-    const draw = new Draw(spy.shader, spy.gl, spy.ctx);
+    const projection = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    const draw = new Draw(spy.shader, spy.gl, spy.ctx, projection);
 
     afterEach(() => {
         spy.reset();
@@ -108,10 +109,11 @@ describe("Draw", () => {
             expect(spy.uniforms.blend[3]).toBe(1);
         });
 
-        it("sets position uniform to a projection matrix", () => {
+        it("sets position uniform to the projection matrix", () => {
+            draw.preparePrimitive([]);
             expect(spy.uniforms.positionMatrix.length).toBe(9);
             for (let i = 0; i <= 8; i++) {
-                expect(spy.uniforms.positionMatrix[i]).toBe(i % 4 === 0 ? 1 : 0);
+                expect(spy.uniforms.positionMatrix[i]).toBe(i);
             }
         });
 
@@ -135,7 +137,7 @@ describe("Draw", () => {
 
         it("disables texture", () => {
             draw.preparePrimitive([]);
-            expect(spy.uniforms.textured).toBe(0);
+            expect(spy.uniforms.textured[0]).toBe(0);
         });
     });
 
@@ -156,13 +158,10 @@ describe("Draw", () => {
     });
 
     describe("rect()", () => {
-        it("sets the vertices correctly", () => {
+        it("sets the correct number of vertices", () => {
+            // Should be six vertices, since we draw two triangles to make a the rectangle
             draw.rect(10, 20, 30, 40);
-            expect(spy.positions.length).toBe(4);
-            expect(spy.positions[0]).toBe(10);
-            expect(spy.positions[1]).toBe(20);
-            expect(spy.positions[2]).toBe(30);
-            expect(spy.positions[3]).toBe(40);
+            expect(spy.positions.length).toBe(12); // 2 points per vertex
         });
 
         it("makes the draw call", () => {
@@ -173,9 +172,10 @@ describe("Draw", () => {
 
     describe("circle()", () => {
         it("sets the correct number of vertices depending on segments", () => {
-            // Should have: 2 for center + 2 per segment
+            // Should have: 2 points for center + 2 points per segment + closing point
+            // Meaning 10 segments -> 2 + 2 * 10 + 2 = 24
             draw.circle(10, 10, 10, 10);
-            expect(spy.positions.length).toBe(30);
+            expect(spy.positions.length).toBe(24);
             expect(spy.positions[0]).toBe(10); // only assert on the center point
             expect(spy.positions[1]).toBe(10);
         });

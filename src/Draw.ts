@@ -93,13 +93,17 @@ export class Draw {
     /** 2D canvas context for our ctx methods. If null, this second canvas is disabled and these methods will throw if called. */
     ctx: CanvasRenderingContext2D | null;
 
+    /** Current projection matrix */
+    projectionMatrix: number[];
+
     /** Configurable default values to use when drawing. */
     defaults: Required<DrawDefaults>;
 
-    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, defaults?: DrawDefaults) {
+    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, projectionMatrix: number[], defaults?: DrawDefaults) {
         this.shader = shader;
         this.gl = gl;
         this.ctx = ctx;
+        this.projectionMatrix = projectionMatrix;
         this.defaults = {
             primitiveColor: defaults?.primitiveColor ?? new Color("#ffffff"),
             fontName: defaults?.fontName ?? "Arial",
@@ -119,9 +123,12 @@ export class Draw {
 
     /** Prepares to draw a primitive shape with the provided vertex positions */
     preparePrimitive(positions: number[], color?: Color) {
-        // TODO draw.preparePrimitive
+        this.shader.setPositions(positions);
+        this.gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.projectionMatrix);
+        this.gl.uniform1i(this.shader.uniforms.textured, 0);
+        const col = color ?? this.defaults.primitiveColor;
+        this.gl.uniform4f(this.shader.uniforms.blend, col.red, col.green, col.blue, col.alpha);
     }
-
 
     /** 
      * Draws a line between (`x`, `y`) and (`x2`, `y2`).
@@ -129,7 +136,8 @@ export class Draw {
      * If no color is specified, this will be drawn in the `defaultColor` of this instance.
      */
     line(x: number, y: number, x2: number, y2: number, color?: Color) {
-        // TODO draw.line
+        this.preparePrimitive([x, y, x2, y2], color);
+        this.gl.drawArrays(this.gl.LINES, 0, 2);
     }
 
     /** 
@@ -138,7 +146,17 @@ export class Draw {
      * If no color is specified, this will be drawn in the `defaultColor` of this instance.
      */
     rect(x: number, y: number, x2: number, y2: number, color?: Color) {
-        // TODO draw.rect
+        this.preparePrimitive([
+            // First triangle
+            x, y,
+            x, y2, 
+            x2, y2,
+            // Second triangle
+            x2, y2,
+            x2, y,
+            x, y,
+        ], color);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
     }
 
     /**
@@ -149,7 +167,18 @@ export class Draw {
      * If no color is specified, this will be drawn in the `defaultColor` of this instance.
      */
     circle(x: number, y: number, radius: number, segments: number, color?: Color) {
-        // TODO draw.circle
+        const positions = [x, y];
+
+        // Push each successive segment onto our positions
+        let theta = 0;
+        for (let i = 0; i <= segments; i++) {
+            positions.push(x + (radius * Math.cos(theta)));
+            positions.push(y + (radius * Math.sin(theta)));
+            theta += (Math.PI * 2) / segments;
+        }
+
+        this.preparePrimitive(positions, color);
+        this.gl.drawArrays(this.gl.TRIANGLE_FAN, 0, 2 + segments);
     }
 
     /**
@@ -164,7 +193,8 @@ export class Draw {
      * If no color is specified, this will be drawn in the `defaultColor` of this instance.
      */
     primitive(mode: GLDrawModes, positions: number[], color?: Color) {
-        // TODO draw.primitive
+        this.preparePrimitive(positions, color);
+        this.gl.drawArrays(this.gl[mode], 0, positions.length / 2);
     }
 
     /** Draws an image from a sprite at (`x`, `y`). */
