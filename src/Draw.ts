@@ -1,5 +1,6 @@
-import { Color } from "./Color";
+import { Color } from "./util/Color";
 import { Shader } from "./Shader";
+import { Timer } from "./util/Timer";
 
 /** A collection of images to be rendered */
 export interface Sprite {
@@ -96,14 +97,18 @@ export class Draw {
     /** Current projection matrix */
     projectionMatrix: number[];
 
+    /** Internal timer used to animate sprites */
+    timer: Timer;
+
     /** Configurable default values to use when drawing. */
     defaults: Required<DrawDefaults>;
 
-    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, projectionMatrix: number[], defaults?: DrawDefaults) {
+    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, projectionMatrix: number[], timer: Timer, defaults?: DrawDefaults) {
         this.shader = shader;
         this.gl = gl;
         this.ctx = ctx;
         this.projectionMatrix = projectionMatrix;
+        this.timer = timer;
         this.defaults = {
             primitiveColor: defaults?.primitiveColor ?? new Color("#ffffff"),
             fontName: defaults?.fontName ?? "Arial",

@@ -1,4 +1,4 @@
-import { Color } from "./Color";
+import { Color } from "./util/Color";
 import { Shader } from "./Shader";
 
 export {

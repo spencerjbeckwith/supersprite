@@ -1,7 +1,9 @@
 import { Draw, DrawError } from "./Draw";
 import expect from "expect";
 import { Shader } from "./Shader";
-import { Color } from "./Color";
+import { Color } from "./util/Color";
+import { Timer } from "./util/Timer";
+import sinon from "sinon";
 
 /** To help us track GL/ctx state in our tests - used in this file only */
 class Spy {
@@ -92,11 +94,16 @@ class Spy {
 describe("Draw", () => {
 
     const spy = new Spy();
+    const timer = new Timer();
     const projection = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    const draw = new Draw(spy.shader, spy.gl, spy.ctx, projection);
-
+    const draw = new Draw(spy.shader, spy.gl, spy.ctx, projection, timer);
+    const dateStub = sinon.stub(Date, "now");
+    
     afterEach(() => {
         spy.reset();
+    });
+    after(() => {
+        dateStub.restore();
     });
 
     describe("preparePrimitive", () => {

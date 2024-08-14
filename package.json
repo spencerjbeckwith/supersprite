@@ -50,7 +50,8 @@
   "nyc": {
     "exclude": [
       "**/*.d.ts",
-      "**/*.spec.ts"
+      "**/*.spec.ts",
+      "src/shaders/**.ts"
     ]
   }
 }
