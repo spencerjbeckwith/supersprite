@@ -55,10 +55,8 @@ export class Shader {
         blend: WebGLUniformLocation;
         /** Uniform that determines if the atlas texture should be used or not */
         textured: WebGLUniformLocation;
-
-        // TODO: expand this list when you revise the shader
-        // You'll also probably want some convenient API methods that can easily set the uniforms, too
-        // Don't forget to update your tests while you expand this class!
+        /** Uniform that lists transformations to be applied */
+        transformations: WebGLUniformLocation;
     }
 
     /** Vertex array containing a unit quad (a square) */
@@ -98,6 +96,7 @@ export class Shader {
             atlas: this.getUniform("u_atlas"),
             blend: this.getUniform("u_blend"),
             textured: this.getUniform("u_textured"),
+            transformations: this.getUniform("u_transformations"),
         }
 
         // Set up the VAO
