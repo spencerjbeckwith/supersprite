@@ -1,6 +1,7 @@
 import { Color } from "./util/Color";
 import { Shader } from "./Shader";
 import { Timer } from "./util/Timer";
+import { Transform } from "./util/Transform";
 
 /** A collection of images to be rendered */
 export interface Sprite {
@@ -203,12 +204,12 @@ export class Draw {
     }
 
     /** Draws an image from a sprite at (`x`, `y`). */
-    sprite(sprite: Sprite, image: number, x: number, y: number) {
+    sprite(sprite: Sprite, image: number, x: number, y: number, transform?: Transform) {
         // TODO draw.sprite
     }
 
     /** Draws a sprite animated at `animationSpeed` images per second at (`x`, `y`). */
-    spriteAnim(sprite: Sprite, animationSpeed: number, x: number, y: number) {
+    spriteAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, transform?: Transform) {
         // TODO draw.spriteAnim
     }
 
@@ -222,7 +223,7 @@ export class Draw {
      * If `UVs` is not provided, the UV coordinates will match the positions. This will appear to "slice" sections out of the image rather than contort it.
      * 
      */
-    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, positions: number[], UVs?: number[]) {
+    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, positions: number[], UVs?: number[], transform?: Transform) {
         // TODO draw.spriteSpecial
     }
 
@@ -236,7 +237,7 @@ export class Draw {
      * If `UVs` is not provided, the UV coordinates will match the positions. This will appear to "slice" sections out of the image rather than contort it.
      * 
      */
-    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, positions: number[], UVs?: number[]) {
+    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, positions: number[], UVs?: number[], transform?: Transform) {
         // TODO draw.spriteSpecialAnim
     }
 

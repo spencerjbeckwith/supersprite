@@ -26,7 +26,7 @@ describe("Transform", () => {
         const t = new Transform();
         t.rotateDeg(90);
         expect(t.list[0].type).toBe("rotate");
-        expect(t.list[0].arg0).toBeCloseTo(Math.PI / 4);
+        expect(t.list[0].arg0).toBeCloseTo(Math.PI / 2);
     });
 
     it("rotates via radians", () => {
@@ -74,7 +74,21 @@ describe("Transform", () => {
         const t = new Transform();
         expect(() => {
             for (let i = 0; i < MAX_TRANSFORMATIONS + 1; i++) {
-                t.translate(1, 1);
+                // Each transformation must be different so they don't merge or cancel each other out
+                switch (i % 3) {
+                    case (0): {
+                        t.translate(1, 1);
+                        break;
+                    }
+                    case (1): {
+                        t.rotateRad(1);
+                        break;
+                    }
+                    case (2): {
+                        t.scale(2, 2);
+                        break;
+                    }
+                }
             }
         }).toThrow(TransformError);
     });
@@ -103,7 +117,7 @@ describe("Transform", () => {
         t.translate(20, 40);
         expect(t.list.length).toBe(1);
         expect(t.list[0].arg0).toBe(30);
-        expect(t.list[1].arg1).toBe(60);
+        expect(t.list[0].arg1).toBe(60);
     });
 
     it("merges consecutive rotations", () => {
@@ -120,7 +134,7 @@ describe("Transform", () => {
         t.scale(-3, 5);
         expect(t.list.length).toBe(1);
         expect(t.list[0].arg0).toBe(-6);
-        expect(t.list[0].arg0).toBe(20);
+        expect(t.list[0].arg1).toBe(20);
     });
 
     it("cancels contradictory translations", () => {
@@ -143,7 +157,7 @@ describe("Transform", () => {
         const t = new Transform();
         t.scale(2, 4);
         t.scale(2, -25);
-        t.scale(0.25, -0.1);
+        t.scale(0.25, -0.01);
         expect(t.list.length).toBe(0);
     });
 });
