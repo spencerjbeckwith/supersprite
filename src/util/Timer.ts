@@ -31,7 +31,7 @@ export class Timer {
         return Math.sin((Math.PI * 2 * this.#current) / (60 * period));
     }
 
-    /** Current value of the Timer, incrementing at 60 points per second to match the expected framerate */
+    /** Current value of the Timer in frames since initialization, incrementing at 60 points per second to match the expected framerate */
     get current() {
         return Math.round(this.#current);
     }

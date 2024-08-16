@@ -1,9 +1,10 @@
-import { Draw, DrawError } from "./Draw";
+import { Draw, DrawError, Sprite } from "./Draw";
 import expect from "expect";
 import { Shader } from "./Shader";
 import { Color } from "./util/Color";
 import { Timer } from "./util/Timer";
 import sinon from "sinon";
+import { Transform } from "./util/Transform";
 
 /** To help us track GL/ctx state in our tests - used in this file only */
 class Spy {
@@ -12,6 +13,7 @@ class Spy {
     ctx: CanvasRenderingContext2D;
     positions: number[] = [];
     UVs: number[] = [];
+    vaoWasBound: boolean;
     vaoBound: boolean;
     uniforms: {
         [name: string]: number[];
@@ -42,7 +44,7 @@ class Spy {
                 atlas: "atlas" as WebGLUniformLocation,
                 blend: "blend" as WebGLUniformLocation,
                 textured: "textured" as WebGLUniformLocation,
-                // TODO: expand this list when there are more uniforms configured by our draw calls
+                transformations: "transformations" as WebGLUniformLocation,
             },
         } as Shader;
 
@@ -62,6 +64,9 @@ class Spy {
             this.uniforms[location] = [r, g, b, a];
         };
         this.gl.bindVertexArray = (vao: any) => {
+            if (!this.vaoWasBound && vao) {
+                this.vaoWasBound = true;
+            }
             this.vaoBound = vao ? true : false;
         };
         this.gl.drawArrays = () => {
@@ -77,6 +82,7 @@ class Spy {
         // this.ctx.fillText = ...
         // this.ctx.measureText = ...
 
+        this.vaoWasBound = false;
         this.vaoBound = false;
         this.uniforms = {};
         this.drawn = false;
@@ -85,6 +91,7 @@ class Spy {
     reset() {
         this.positions = [];
         this.UVs = [];
+        this.vaoWasBound = false;
         this.vaoBound = false;
         this.uniforms = {};
         this.drawn = false;
@@ -99,6 +106,24 @@ describe("Draw", () => {
     const draw = new Draw(spy.shader, spy.gl, spy.ctx, projection, timer);
     const dateStub = sinon.stub(Date, "now");
     
+    const s: Sprite = {
+        width: 16,
+        height: 32,
+        images: [{
+            x: 0,
+            y: 0,
+            t: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        },{
+            x: 16,
+            y: 16,
+            t: [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        },{
+            x: 32,
+            y: 32,
+            t: [2, 2, 2, 2, 2, 2, 2, 2, 2],
+        }]
+    };
+
     afterEach(() => {
         spy.reset();
     });
@@ -212,19 +237,87 @@ describe("Draw", () => {
     });
 
     describe("sprite()", () => {
-        // TODO test draw.sprite()
+        it("binds and unbinds the vao", () => {
+            draw.sprite(s, 0, 0, 0);
+            expect(spy.vaoWasBound).toBe(true);
+            expect(spy.vaoBound).toBe(false);
+        });
     });
 
     describe("spriteAnim()", () => {
-        // TODO test draw.spriteAnim()
+        it("draws the correct image based on the timer", () => {
+            dateStub.returns(0);
+            draw.timer = new Timer();
+            dateStub.returns(2500);
+            draw.timer.increment(); // 2.5 seconds in, at 0.5 images per second, should draw image 1
+            draw.spriteAnim(s, 0.5, 0, 0);
+            expect(spy.uniforms.textureMatrix[0]).toBe(1);
+        });
     });
 
     describe("spriteSpecial()", () => {
-        // TODO test draw.spriteSpecial()
+        it("does not bind the vao", () => {
+            draw.spriteSpecial(s, 0, 0, 0);
+            expect(spy.vaoWasBound).toBe(false);
+            expect(spy.vaoBound).toBe(false);
+        });
+
+        it("translates by the given position and scales sprite to the correct size", () => {
+            draw.spriteSpecial(s, 0, 25, 50);
+            const u = spy.uniforms.transformations;
+            expect(u[0]).toBe(1); // translate the sprite...
+            expect(u[1]).toBe(25); // ...by 25 pixels horizontally...
+            expect(u[2]).toBe(50); // ...and by 50 pixels verticlaly...
+            expect(u[3]).toBe(3); // ...while scaling the sprite...
+            expect(u[4]).toBe(16); // ...16 pixels horizontally...
+            expect(u[5]).toBe(32); // ...and 32 pixels vertically.
+        });
+
+        it("adds additional transformations", () => {
+            // translation can't be 0, because then the transformation chain is shortened
+            // and the values we're checking would be different
+            draw.spriteSpecial(s, 0, 1, 1, undefined, new Transform().rotateRad(Math.PI));
+            const u = spy.uniforms.transformations;
+            // use 6 because that's after both a translation and a scale
+            expect(u[6]).toBe(2); // Rotation
+            expect(u[7]).toBeCloseTo(Math.PI);
+        });
+
+        it("limits the drawn image", () => {
+            draw.spriteSpecial(s, -2, 0, 0);
+            expect(spy.uniforms.textureMatrix[0]).toBe(0); // image 0
+            draw.spriteSpecial(s, 7, 0, 0);
+            expect(spy.uniforms.textureMatrix[0]).toBe(1); // image 1 (from modulo wrap)
+        });
+
+        it("uses texture", () => {
+            draw.spriteSpecial(s, 2, 0, 0);
+            expect(spy.uniforms.textured[0]).toBeTruthy();
+        });
+
+        it("sets texture positions according to the sprite object", () => {
+            draw.spriteSpecial(s, 2, 0, 0);
+            for (let i = 0; i < 9; i++) {
+                // Stub sprite has image index value in the texture matrix
+                expect(spy.uniforms.textureMatrix[i]).toBe(2);
+            }
+        });
+
+        it("makes the draw call", () => {
+            draw.spriteSpecial(s, 2, 0, 0);
+            expect(spy.drawn).toBe(true);
+        });
     });
 
     describe("spriteSpecialAnim()", () => {
-        // TODO test draw.spriteSpecialAnim()
+        it("draws the correct image based on the timer", () => {
+            dateStub.returns(0);
+            draw.timer = new Timer();
+            dateStub.returns(4500);
+            draw.timer.increment(); // 4.5 seconds in, at 1 image per second, should draw image 1
+            draw.spriteSpecialAnim(s, 1, 0, 0);
+            expect(spy.uniforms.textureMatrix[0]).toBe(1);
+        });
     });
 
     describe("spriteCtx()", () => {

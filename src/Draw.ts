@@ -127,6 +127,20 @@ export class Draw {
         };
     }
 
+    /** Ensures a provided image index corresponds to an actual image of a sprite */
+    #limitImage(sprite: Sprite, image: number) {
+        image = Math.max(0, Math.floor(image));
+        if (!sprite.images[image]) {
+            image %= sprite.images.length;
+        }
+        return image;
+    }
+
+    /** Converts an animation speed (in frames per second) to an image index in the sprite, based on this instance's Timer */
+    #speedToImage(sprite: Sprite, speed: number) {
+        return (this.timer.current * speed / 60) % sprite.images.length;
+    }
+
     /** Prepares to draw a primitive shape with the provided vertex positions */
     preparePrimitive(positions: number[], color?: Color) {
         this.shader.setPositions(positions);
@@ -205,40 +219,53 @@ export class Draw {
 
     /** Draws an image from a sprite at (`x`, `y`). */
     sprite(sprite: Sprite, image: number, x: number, y: number, transform?: Transform) {
-        // TODO draw.sprite
+        this.gl.bindVertexArray(this.shader.vao);
+        this.spriteSpecial(sprite, image, x, y, 6, transform);
+        this.gl.bindVertexArray(null);
     }
 
     /** Draws a sprite animated at `animationSpeed` images per second at (`x`, `y`). */
     spriteAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, transform?: Transform) {
-        // TODO draw.spriteAnim
+        this.sprite(sprite, this.#speedToImage(sprite, animationSpeed), x, y, transform);
     }
 
     /**
      * Draws an image from a sprite at (`x`, `y`) using custom vertices and UV coordinates.
+     *
+     * - Positions may be used to contort the sprite in ways a regular transformation couldn't. These are defined in pixel coordinates, not clipspace.
+     * - UVs may be used to set the texture coordinate for each provided vertex in positions. This allows any part of the image texture to be applied to the shape in any way. Note that while `UVs` is also in pixel coordinates, they correspond to the *sprite image* - where (0, 0) is the top-left corner.
+     *   These are defined relative to the sprite - wherein a value of (1, 1) refers to the bottom-right corner.
      * 
-     * `positions` and `UVs` should be defined in pixel coordinates, not clipspace.
-     * - `positions` may be used to contort the sprite in ways a regular transformation couldn't.
-     * - `UVs` may be used to set the texture coordinate for each provided vertex in `positions`. This allows any part of the image texture to be applied to the shape in any way. Note that while `UVs` is also in pixel coordinates, they correspond to the *sprite image* - where (0, 0) is the top-left corner.
+     * Positions and UVs are provided to this function by calls to `draw.shader.setPositions()` and `draw.shader.setUVs()`.
      * 
-     * If `UVs` is not provided, the UV coordinates will match the positions. This will appear to "slice" sections out of the image rather than contort it.
-     * 
+     * `vertices` determines how many vertices should be drawn. This should correspond to the length of the positions/UVs lists, divided by 2.
      */
-    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, positions: number[], UVs?: number[], transform?: Transform) {
-        // TODO draw.spriteSpecial
+    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, vertices = 6, transform?: Transform) {
+        image = this.#limitImage(sprite, image);
+
+        // Set transformations
+        const t = new Transform().translate(x, y).scale(sprite.width, sprite.height);
+        if (transform) {
+            t.append(transform);
+        }
+        this.gl.uniformMatrix3fv(this.shader.uniforms.transformations, false, t.toArray());
+
+        // Set texture coordinates
+        this.gl.uniformMatrix3fv(this.shader.uniforms.textureMatrix, false, sprite.images[image].t);
+        
+        // Do the draw call
+        this.gl.uniform1i(this.shader.uniforms.textured, 1);
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, vertices);
     }
 
     /**
-     * Draws a sprite animated at `animationSpeed` iamges per second at (`x`, `y`) using custom vertices and UV coordinates.
+     * Draws a sprite animated at `animationSpeed` images per second at (`x`, `y`) using custom vertices and UV coordinates.
      * 
-     * `positions` and `UVs` should be defined in pixel coordinates, not clipspace.
-     * - `positions` may be used to contort the sprite in ways a regular transformation couldn't.
-     * - `UVs` may be used to set the texture coordinate for each provided vertex in `positions`. This allows any part of the image texture to be applied to the shape in any way. Note that while `UVs` is also in pixel coordinates, they correspond to the *sprite image* - where (0, 0) is the top-left corner.
-     * 
-     * If `UVs` is not provided, the UV coordinates will match the positions. This will appear to "slice" sections out of the image rather than contort it.
-     * 
+     * As with `spriteSpecial()`, this function expects positions and UVs to be set ahead of time via `draw.shader.setPositions()` and `draw.shader.setUVs()`.
+     * The final number of vertices should also be provided to this function. 
      */
-    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, positions: number[], UVs?: number[], transform?: Transform) {
-        // TODO draw.spriteSpecialAnim
+    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, vertices = 6, transform?: Transform) {
+        this.spriteSpecial(sprite, this.#speedToImage(sprite, animationSpeed), x, y, vertices, transform);
     }
 
     /** 

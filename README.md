@@ -1,19 +1,17 @@
 # supersprite
 
 # TODO: V3
-- Rebuild application
-- Add tests
+- Add Core class
+- Actually make sure we're rendering to the screen lol
+- Implement and test ctx methods
 - Refactor atlas script
 - Github actions
 - Write rollup and webpack examples
 
-main classes:
-- Core: clean user-facing API
-- Transformer: chained on draw orders to rotate, transform, or scale
-- Colorizer: chained on draw orders to blend or palette swap
-
 Planned features:
-- sprite fonts
+- subdivisor and flexors
+- palette swap and blending on sprite calls
+- sprite-based fonts
 
 ===
 
