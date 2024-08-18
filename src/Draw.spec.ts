@@ -10,7 +10,7 @@ import { Transform } from "./util/Transform";
 class Spy {
     shader: Shader;
     gl: WebGL2RenderingContext;
-    ctx: CanvasRenderingContext2D;
+    _ctx: CanvasRenderingContext2D;
     positions: number[] = [];
     UVs: number[] = [];
     vaoWasBound: boolean;
@@ -74,13 +74,17 @@ class Spy {
         }
 
         const c2 = new HTMLCanvasElement();
-        this.ctx = c2.getContext("2d")!;
+        this._ctx = c2.getContext("2d")!;
 
         // Stubs for context methods we want to watch
-        // TODO: stubs for ctx for Draw tests
-        // this.ctx.drawImage = ...
-        // this.ctx.fillText = ...
-        // this.ctx.measureText = ...
+        // @ts-ignore have to ignore for sake of a strange overload problem I don't feel like solving
+        this._ctx.drawImage = sinon.stub();
+        this._ctx.fillText = sinon.stub();
+        this._ctx.measureText = (text: string) => {
+            return {
+                width: text.length,
+            } as TextMetrics;
+        }
 
         this.vaoWasBound = false;
         this.vaoBound = false;
@@ -95,6 +99,16 @@ class Spy {
         this.vaoBound = false;
         this.uniforms = {};
         this.drawn = false;
+        (this._ctx.drawImage as sinon.SinonStub).resetHistory();
+        (this._ctx.fillText as sinon.SinonStub).resetHistory();
+    }
+
+    get ctx() {
+        return {
+            ...this._ctx,
+            drawImage: this._ctx.drawImage as sinon.SinonStub,
+            fillText: this._ctx.fillText as sinon.SinonStub,
+        };
     }
 }
 
@@ -103,7 +117,7 @@ describe("Draw", () => {
     const spy = new Spy();
     const timer = new Timer();
     const projection = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    const draw = new Draw(spy.shader, spy.gl, spy.ctx, projection, timer);
+    const draw = new Draw(spy.shader, spy.gl, spy._ctx, {} as CanvasImageSource, projection, timer);
     const dateStub = sinon.stub(Date, "now");
     
     const s: Sprite = {
@@ -321,18 +335,177 @@ describe("Draw", () => {
     });
 
     describe("spriteCtx()", () => {
-        // TODO test draw.spriteCtx()
+        it("throws if the 2d context isn't initialized", () => {
+            const d = new Draw(spy.shader, spy.gl, null, null, [], timer);
+            expect(() => {
+                d.spriteCtx(s, 0, 0, 0);
+            }).toThrow(DrawError);
+        });
+
+        it("throws if there was no atlas image specified", () => {
+            const d = new Draw(spy.shader, spy.gl, spy._ctx, null, [], timer);
+            expect(() => {
+                d.spriteCtx(s, 0, 0, 0);
+            }).toThrow(DrawError);
+        });
+
+        it("limits the drawn image", () => {
+            draw.spriteCtx(s, -2, 0, 0);
+            expect(spy.ctx.drawImage.args[0][1]).toBe(s.images[0].x);
+            expect(spy.ctx.drawImage.args[0][2]).toBe(s.images[0].y);
+            draw.spriteCtx(s, 7, 0, 0);
+            expect(spy.ctx.drawImage.args[1][1]).toBe(s.images[1].x);
+            expect(spy.ctx.drawImage.args[1][2]).toBe(s.images[1].y);
+        });
+
+        it("makes the draw call", () => {
+            draw.spriteCtx(s, 2, 0, 0);
+            expect(spy.ctx.drawImage.called).toBeTruthy();
+        });
+
+        it("draws at the correct position and scale", () => {
+            draw.spriteCtx(s, 0, 12, 18, 1.5, 0.5);
+            expect(spy.ctx.drawImage.args[0][5]).toBe(12);
+            expect(spy.ctx.drawImage.args[0][6]).toBe(18);
+            expect(spy.ctx.drawImage.args[0][7]).toBeCloseTo(s.width * 1.5);
+            expect(spy.ctx.drawImage.args[0][8]).toBeCloseTo(s.height * 0.5);
+        });
+
+        it("draws using the correct atlas coordinates", () => {
+            // Image2 in our mock is at 32, 32 in our "atlas"
+            draw.spriteCtx(s, 2, 0, 0);
+            expect(spy.ctx.drawImage.args[0][1]).toBe(32);
+            expect(spy.ctx.drawImage.args[0][2]).toBe(32);
+            expect(spy.ctx.drawImage.args[0][3]).toBe(s.width);
+            expect(spy.ctx.drawImage.args[0][4]).toBe(s.height);
+        });
     });
 
     describe("spriteCtxAnim()", () => {
-        // TODO test draw.spriteCtxAnim()
+        it("draws the correct image based on the timer", () => {
+            dateStub.returns(0);
+            draw.timer = new Timer();
+            dateStub.returns(2500);
+            draw.timer.increment(); // 2.5 seconds in, at 0.5 images per second, should draw image 1
+            // and image 1 is at 16, 16 in our "atlas"
+            draw.spriteCtxAnim(s, 0.5, 0, 0);
+            expect(spy.ctx.drawImage.args[0][1]).toBe(16);
+            expect(spy.ctx.drawImage.args[0][2]).toBe(16);
+        });
     });
 
     describe("text()", () => {
-        // TODO test draw.text()
+        it("throws if the 2d context isn't initialized", () => {
+            const d = new Draw(spy.shader, spy.gl, null, null, [], timer);
+            expect(() => {
+                d.text("hi", 0, 0);
+            }).toThrow(DrawError);
+        });
+
+        it("sets context options to defaults", () => {
+            draw.text("hi", 0, 0);
+            expect(spy.ctx.textAlign).toBe("left");
+            expect(spy.ctx.textBaseline).toBe("top");
+            expect(spy.ctx.font).toBe("12px Arial");
+            expect(spy.ctx.fillStyle).toBe("#fafafa");
+        });
+
+        it("sets context options when provided", () => {
+            draw.text("hi", 0, 0, {
+                hAlign: "right",
+                vAlign: "bottom",
+                fontName: "Comic Sans MS",
+                fontSize: 69,
+                textColor: "#ee00ff", 
+            });
+            expect(spy.ctx.textAlign).toBe("right");
+            expect(spy.ctx.textBaseline).toBe("bottom");
+            expect(spy.ctx.font).toBe("69px Comic Sans MS");
+            expect(spy.ctx.fillStyle).toBe("#ee00ff");
+        });
+
+        it("draws a shadow", () => {
+            draw.text("hi", 0, 0, {
+                drawShadow: true,
+            });
+            expect(spy.ctx.fillText.calledTwice).toBe(true);
+        });
+
+        it("makes the draw call", () => {
+            draw.text("hi", 0, 0);
+            expect(spy.ctx.fillText.calledOnce).toBe(true);
+        });
+
+        it("draws nothing if text is empty", () => {
+            draw.text("", 0, 0);
+            expect(spy.ctx.fillText.called).toBeFalsy();
+        });
     });
 
     describe("textWrap()", () => {
-        // TODO test draw.textWrap()
+        // For these tests, measureText returns the number of characters,
+        // when in reality it would be a pixel width.
+
+        it("throws if the 2d context isn't initialized", () => {
+            const d = new Draw(spy.shader, spy.gl, null, null, [], timer);
+            expect(() => {
+                d.textWrap("hi", 0, 0, 10);
+            }).toThrow(DrawError);
+        });
+
+        it("doesn't split when text isn't wide enough", () => {
+            draw.textWrap("a", 0, 0, 10);
+            expect(spy.ctx.fillText.callCount).toBe(1);
+        });;
+
+        it("splits when width is too wide", () => {
+            draw.textWrap("12345 12345", 0, 0, 4);
+            expect(spy.ctx.fillText.calledTwice).toBe(true);
+        });
+
+        it("splits on the nearest split character", () => {
+            draw.textWrap("aaa bbb", 0, 0, 2);
+            expect(spy.ctx.fillText.calledTwice).toBe(true);
+            expect(spy.ctx.fillText.args[0][0]).toBe("aaa");
+            expect(spy.ctx.fillText.args[1][0]).toBe("bbb");
+        });
+
+        it("aligns to the middle", () => {
+            draw.textWrap("aaa bbb ccc", 0, 50, 3, {
+                vAlign: "middle",
+            });
+            expect(spy.ctx.fillText.args[0][2]).toBeLessThan(50);
+            expect(spy.ctx.fillText.args[1][2]).toBe(50);
+            expect(spy.ctx.fillText.args[2][2]).toBeGreaterThan(50);
+        });
+
+        it("aligns to the bottom", () => {
+            draw.textWrap("aaa bbb ccc", 0, 50, 3, {
+                vAlign: "bottom",
+            });
+            expect(spy.ctx.fillText.args[0][2]).toBeLessThan(spy.ctx.fillText.args[1][2]);
+            expect(spy.ctx.fillText.args[1][2]).toBeLessThan(50);
+            expect(spy.ctx.fillText.args[2][2]).toBe(50);
+        });
+
+        it("separates lines by the separation height", () => {
+            draw.textWrap("aaa bbb", 0, 40, 2, {
+                lineSeparation: 13,
+            });
+            expect(spy.ctx.fillText.args[0][2]).toBe(40);
+            expect(spy.ctx.fillText.args[1][2]).toBe(53);
+        });
+
+        it("includes breaking characters in resulting text, except spaces", () => {
+            draw.textWrap("aa/bbbb", 0, 0, 2);
+            expect(spy.ctx.fillText.args[0][0]).toBe("aa/");
+            expect(spy.ctx.fillText.args[1][0]).toBe("bbbb");
+        });
+
+        it("does not include spaces immediately after a break", () => {
+            draw.textWrap("aaaaaa    b", 0, 0, 6);
+            expect(spy.ctx.fillText.args[0][0]).toBe("aaaaaa");
+            expect(spy.ctx.fillText.args[1][0]).toBe("b");
+        });
     });
 });

@@ -5,8 +5,10 @@
 - Actually make sure we're rendering to the screen lol
 - Implement and test ctx methods
 - Refactor atlas script
-- Github actions
 - Write rollup and webpack examples
+- Revise readme
+- Github actions and precommit hooks
+- npm publish action
 
 Planned features:
 - subdivisor and flexors

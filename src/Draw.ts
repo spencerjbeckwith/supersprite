@@ -95,6 +95,9 @@ export class Draw {
     /** 2D canvas context for our ctx methods. If null, this second canvas is disabled and these methods will throw if called. */
     ctx: CanvasRenderingContext2D | null;
 
+    /** Atlas from which to draw sprites on the 2D canvas context. If the 2D canvas context is disabled this has no effect. */
+    atlasImage: CanvasImageSource | null;
+
     /** Current projection matrix */
     projectionMatrix: number[];
 
@@ -104,10 +107,11 @@ export class Draw {
     /** Configurable default values to use when drawing. */
     defaults: Required<DrawDefaults>;
 
-    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, projectionMatrix: number[], timer: Timer, defaults?: DrawDefaults) {
+    constructor(shader: Shader, gl: WebGL2RenderingContext, ctx: CanvasRenderingContext2D | null, atlasImage: CanvasImageSource | null, projectionMatrix: number[], timer: Timer, defaults?: DrawDefaults) {
         this.shader = shader;
         this.gl = gl;
         this.ctx = ctx;
+        this.atlasImage = atlasImage;
         this.projectionMatrix = projectionMatrix;
         this.timer = timer;
         this.defaults = {
@@ -279,8 +283,16 @@ export class Draw {
      * 
      * If the 2D context is disabled, this will throw an error.
      */
-    spriteCtx(sprite: Sprite, image: number, x: number, y: number, scaleX?: number, scaleY?: number) {
-        // TODO draw.spriteCtx
+    spriteCtx(sprite: Sprite, image: number, x: number, y: number, scaleX = 1, scaleY = 1) {
+        if (!this.ctx) {
+            throw new DrawError("Unable to draw sprites on the 2D canvas context as it is not initialized.");
+        }
+        if (!this.atlasImage) {
+            throw new DrawError("atlasImage must be specified to draw sprites on the 2D canvas context.");
+        }
+
+        const i = sprite.images[this.#limitImage(sprite, image)];
+        this.ctx.drawImage(this.atlasImage, i.x, i.y, sprite.width, sprite.height, x, y, sprite.width * scaleX, sprite.height * scaleY);
     }
 
     /** 
@@ -294,8 +306,8 @@ export class Draw {
      * 
      * If the 2D context is disabled, this will throw an error.
      */
-    spriteCtxAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, scaleX?: number, scaleY?: number) {
-        // TODO draw.spriteCtxAnim
+    spriteCtxAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, scaleX = 1, scaleY = 1) {
+        this.spriteCtx(sprite, this.#speedToImage(sprite, animationSpeed), x, y, scaleX, scaleY);
     }
 
     /**
@@ -306,7 +318,28 @@ export class Draw {
      * If the 2D context is disabled, this will throw an error.
     */
     text(text: string, x: number, y: number, options?: DrawTextOptions) {
-        // TODO draw.text
+        if (!this.ctx) {
+            throw new DrawError("Unable to draw text on the 2D canvas context as it is not initialized.");
+        }
+
+        // Don't draw if it's pointless
+        if (text.length === 0) return;
+
+        this.ctx.textAlign = options?.hAlign ?? this.defaults.hAlign;
+        this.ctx.textBaseline = options?.vAlign ?? this.defaults.vAlign;
+        this.ctx.font = `${options?.fontSize ?? this.defaults.fontSize}px ${options?.fontName ?? this.defaults.fontName}`;
+        const maxWidth = options?.maxWidth ?? this.defaults.maxWidth ?? undefined;
+        if (options?.drawShadow || this.defaults.drawShadow) {
+            this.ctx.fillStyle = options?.shadowColor ?? this.defaults.shadowColor;
+            this.ctx.fillText(
+                text,
+                x + (options?.shadowOffsetX ?? this.defaults.shadowOffsetX),
+                y + (options?.shadowOffsetY ?? this.defaults.shadowOffsetY),
+                maxWidth,
+            );
+        }
+        this.ctx.fillStyle = options?.textColor ?? this.defaults.textColor;
+        this.ctx.fillText(text, x, y, maxWidth);
     }
 
     /** 
@@ -319,7 +352,60 @@ export class Draw {
      * If the 2D context is disabled, this will throw an error.
      */
     textWrap(text: string, x: number, y: number, width: number, options?: DrawTextOptions) {
-        // TODO draw.textWrap
+        if (!this.ctx) {
+            throw new DrawError("Unable to draw wrapped text on the 2D canvas context as it is not initialized.");
+        }
+        const lines: string[] = [];
+        let position = 0, lineIndex = 0, currentLine = "";
+
+        // Figure out the text for each line
+        while (position <= text.length) {
+            const char = text.charAt(position);
+            if (char === "") {
+                // End of the text
+                lines[lineIndex] = currentLine;
+                break;
+            } else {
+                if (this.ctx.measureText(currentLine).width >= width && char.match(options?.lineBreakCharacters ?? this.defaults.lineBreakCharacters)) {
+                    // We are wide enough to break, and on a matching break character
+                    if (char !== " ") {
+                        currentLine += char; // Include all characters except spaces
+                    }
+                    // Reset to the next line
+                    lines[lineIndex] = currentLine;
+                    lineIndex++;
+                    currentLine = "";
+                } else {
+                    // Not a breaking character, or not wide enough yet
+                    // Don't add space at the start of a new line
+                    if (currentLine.length > 0 || char !== " ") {
+                        currentLine += char;
+                    }
+                }
+            }
+            position++;
+        }
+
+        // Figure out where to actually draw based on vertical alignment
+        let startY = y;
+        const vAlign = options?.vAlign ?? this.defaults.vAlign;
+        const sep = options?.lineSeparation ?? this.defaults.lineSeparation;
+        switch (vAlign) {
+            case ("middle"): {
+                startY = y - ((lines.length - 1) * sep) / 2;
+                break;
+            }
+            case ("bottom"): {
+                startY = y - ((lines.length - 1) * sep);
+                break;
+            }
+            default: break;
+        }
+
+        // Draw each line
+        for (let l = 0; l < lines.length; l++) {
+            this.text(lines[l], x, startY + (l * sep), options);
+        }
     }
 }
 
