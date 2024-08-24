@@ -14,6 +14,7 @@ Planned features:
 - subdivisor and flexors
 - palette swap and blending on sprite calls
 - sprite-based fonts
+- Loader (provided sprite data, atlas is compiled on the fly)
 
 ===
 
