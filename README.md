@@ -9,6 +9,12 @@
 - Revise readme
 - Github actions and precommit hooks
 - npm publish action
+Should be configurable for core:
+- blend provided to gameTexture
+- transform provided to gameTexture
+- blend function
+- background color
+- ctx image smoothing
 
 Planned features:
 - subdivisor and flexors
