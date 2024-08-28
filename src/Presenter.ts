@@ -137,8 +137,8 @@ export class Presenter {
         this.ctx = ctx;
 
         if (this.options.responsiveness !== "static") {
-            window.addEventListener("resize", this.resize);
-            window.addEventListener("orientationchange", this.resize);
+            window.addEventListener("resize", this.resize.bind(this));
+            window.addEventListener("orientationchange", this.resize.bind(this));
             this.resize();
         }
     }

@@ -19,7 +19,7 @@ void main() {
 
     vec3 positions = u_position_matrix * vec3(a_position, 1.0);
     for (int i = 0; i < MAX_TRANSFORMATIONS; i++) {
-        if (u_transformations[0] == 0.0) {
+        if (u_transformations[i][0] == 0.0) {
             // No (more) transformations
             break;
         }

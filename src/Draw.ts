@@ -147,9 +147,15 @@ export class Draw {
 
     /** Prepares to draw a primitive shape with the provided vertex positions */
     preparePrimitive(positions: number[], color?: Color) {
+        // Set our positions and projection
         this.shader.setPositions(positions);
         this.gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.projectionMatrix);
+
+        // Disable texture
+        this.gl.disableVertexAttribArray(this.shader.attributes.texture);
         this.gl.uniform1i(this.shader.uniforms.textured, 0);
+
+        // Set the color (via the blend uniform)
         const col = color ?? this.defaults.primitiveColor;
         this.gl.uniform4f(this.shader.uniforms.blend, col.red, col.green, col.blue, col.alpha);
     }
@@ -252,7 +258,7 @@ export class Draw {
         if (transform) {
             t.append(transform);
         }
-        this.gl.uniformMatrix3fv(this.shader.uniforms.transformations, false, t.toArray());
+        this.gl.uniform3fv(this.shader.uniforms.transformations, t.toArray());
 
         // Set texture coordinates
         this.gl.uniformMatrix3fv(this.shader.uniforms.textureMatrix, false, sprite.images[image].t);

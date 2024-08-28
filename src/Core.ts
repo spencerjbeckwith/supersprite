@@ -27,9 +27,9 @@ export type GLTextureParameterWrap =
 
 /** Texture parameters set when initialzing a GL texture */
 export interface GLTextureParameters {
-    /** GL function to use when the texture must be magnified. Defaults to "LINEAR". */
+    /** GL function to use when the texture must be magnified. Defaults to "NEAREST", which looks good at low resolutions. */
     magFilter?: GLTextureParameterMagFilter;
-    /** GL function to use when the texture must be minified. Defaults to "LINEAR".  */
+    /** GL function to use when the texture must be minified. Defaults to "NEAREST", which looks good at low resolutions.  */
     minFilter?: GLTextureParameterMinFilter;
     /** Wrapping behavior at the horizontal edges of the texture. Defaults to "REPEAT". */
     wrapS?: GLTextureParameterWrap;
@@ -91,7 +91,7 @@ export class Core {
     /** Framebuffer used to render to the game texture, so different effects may be applied "globally" */
     framebuffer: WebGLFramebuffer;
 
-    /** Projection matrix based on the view's current size */
+    /** Projection matrix based on the view's current size, translating from pixel coordinates into clipspace */
     #projection: number[];
     get projection() {
         return this.#projection;
@@ -107,10 +107,27 @@ export class Core {
     #transformationReset: number[];
 
     constructor(options: SuperspriteOptions) {
-        this.#projection = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+        // Position matrix to place the game texture into clipspace
+        this.#positionsMatrix = [
+            2, 0, 0,
+            0, 2, 0,
+            -1, -1, 1
+        ];
+
+        // Texture matrix for the game texture is identity, because we aren't slicing or contorting it (unless UVs are manually defined)
+        this.#identityMatrix = [
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1
+        ];
 
         // Create our child classes
         this.presenter = new Presenter(options.presenter);
+        this.#projection = [
+            2 / this.presenter.options.baseWidth, 0, 0,
+            0, -2 / this.presenter.options.baseHeight, 0,
+            -1, 1, 1
+        ];
         const gl = this.presenter.gl;
         this.shader = new Shader(gl);
         this.timer = new Timer();
@@ -156,6 +173,7 @@ export class Core {
         gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.presenter.options.baseWidth, this.presenter.options.baseHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         this.#setTextureParameters(options.gameTexture);
+        gl.bindTexture(gl.TEXTURE_2D, null);
 
         // Set up the framebuffer
         const framebuffer = gl.createFramebuffer();
@@ -167,7 +185,7 @@ export class Core {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gameTexture, 0);
 
         // Prepare GL to start rendering
-        gl.clearColor(0, 0, 0, 1);
+        gl.clearColor(0, 0, 0.1, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
@@ -175,17 +193,6 @@ export class Core {
 
         // Listen for view change events to update our projection
         this.presenter.options.onResize = (newWidth, newHeight) => {
-            this.#projection = [
-                2 / newWidth, 0, 0,
-                0, 2 / newHeight, 0,
-                -1, -1, 1
-            ];
-
-            // Resize the game texture
-            const gl = this.presenter.gl;
-            gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.presenter.currentWidth, this.presenter.currentHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-
             // Fix 2D context
             const ctx = this.presenter.ctx;
             if (ctx) {
@@ -199,24 +206,17 @@ export class Core {
             }
         };
 
-        // Position matrix for the game texture
-        this.#positionsMatrix = [
-            2, 0, 0,
-            0, -2, 0,
-            -1, 1, 1
-        ];
-
-        // Texture matrix for the game texture is identity, because we aren't slicing or contorting it (unless UVs are manually defined)
-        this.#identityMatrix = [
-            1, 0, 0,
-            0, 1, 0,
-            0, 0, 1
-        ];
-
         // Transformation reset: array of zeros so drawing our game texture doesn't apply anything from prior draw calls
         this.#transformationReset = [];
         while (this.#transformationReset.length < MAX_TRANSFORMATIONS * 3) {
             this.#transformationReset.push(0);
+        }
+
+        // Scale ctx correctly on init
+        const ctx = this.presenter.ctx;
+        if (ctx) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(this.presenter.scaleX, this.presenter.scaleY);
         }
     }
 
@@ -227,8 +227,8 @@ export class Core {
 
         // Draw to the framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        gl.viewport(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
-        gl.clearColor(0, 0, 0, 1);
+        gl.viewport(0, 0, this.presenter.options.baseWidth, this.presenter.options.baseHeight);
+        gl.clearColor(0, 0.2, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         if (ctx) {
             ctx.clearRect(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
@@ -251,7 +251,7 @@ export class Core {
         // Switch to correct framebuffer and texture
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
-        gl.clearColor(0, 0, 0, 1);
+        gl.clearColor(0.2, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
 
@@ -262,7 +262,7 @@ export class Core {
         // If we're applying a transformation, let's understand why the position matrix is set the way it is first
         // and how can we "append" transformations to a result matrix already? We may need to expand Transform a little bit
         // Until then, reset any transformations from prior renders
-        gl.uniformMatrix3fv(this.shader.uniforms.transformations, false, this.#transformationReset);
+        gl.uniform3fv(this.shader.uniforms.transformations, this.#transformationReset);
 
         // Set uniforms and render the game texture
         gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.#positionsMatrix);
@@ -271,13 +271,14 @@ export class Core {
         gl.uniform1i(this.shader.uniforms.textured, 1);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.bindTexture(gl.TEXTURE_2D, null); // Unbind the game texture or we may create a feedback loop next frame
     }
 
     /** Updates the texture parameters on the currently bound texture */
     #setTextureParameters(params?: GLTextureParameters) {
         const gl = this.presenter.gl;
-        const magFilter = params?.magFilter || "LINEAR";
-        const minFilter = params?.minFilter || "LINEAR";
+        const magFilter = params?.magFilter || "NEAREST";
+        const minFilter = params?.minFilter || "NEAREST";
         const wrapS = params?.wrapS || "REPEAT";
         const wrapT = params?.wrapT || "REPEAT";
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl[magFilter]);

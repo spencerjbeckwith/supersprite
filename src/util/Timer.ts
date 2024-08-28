@@ -22,7 +22,9 @@ export class Timer {
      * This should be called every frame.
      */
     increment() {
-        const delta = Date.now() - this.last;
+        const now = Date.now();
+        const delta = now - this.last;
+        this.last = now;
         this.#current += (delta / 1000) * 60;
     }
 

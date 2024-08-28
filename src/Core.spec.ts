@@ -103,22 +103,6 @@ describe("Core", () => {
         expect(bindFramebuffer.args[0][1]).toBeNull();
     });
 
-    it("updates the projection when the view size changes", () => {
-        const core = new Core(opts);
-        core.presenter.options.onResize(400, 600);
-        expect(core.projection[0]).toBeCloseTo(2 / 400);
-        expect(core.projection[1]).toBe(0);
-        expect(core.projection[2]).toBe(0);
-
-        expect(core.projection[3]).toBe(0);
-        expect(core.projection[4]).toBeCloseTo(2 / 600);
-        expect(core.projection[5]).toBe(0);
-
-        expect(core.projection[6]).toBe(-1);
-        expect(core.projection[7]).toBe(-1);
-        expect(core.projection[8]).toBe(1);
-    });
-
     it("calls manually specified onResize when the view size changes", () => {
         const stub = sinon.stub();
         const core = new Core({

@@ -13,4 +13,5 @@ export {
     Shader,
     Draw,
     Presenter,
+    Core,
 };

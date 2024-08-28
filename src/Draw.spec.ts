@@ -54,6 +54,9 @@ class Spy {
         // Stubs for GL methods we want to watch
         // Here we use string for locations, but thats because our Shader is set to use strings here
         // This is so we can easily index this uniforms object without actually needing WebGLUniformLocation objects at all
+        this.gl.uniform3fv = (location: string, data: number[]) => {
+            this.uniforms[location] = data;
+        }
         this.gl.uniformMatrix3fv = (location: string, transpose: GLboolean, data: number[]) => {
             this.uniforms[location] = data;
         };

@@ -1,20 +1,23 @@
 # supersprite
 
 # TODO: V3
-- Add Core class
-- Actually make sure we're rendering to the screen lol
-- Implement and test ctx methods
-- Refactor atlas script
-- Write rollup and webpack examples
-- Revise readme
-- Github actions and precommit hooks
-- npm publish action
+Issues to resolve:
+- Colors not appearing right based on the order they're used?
+- Will sprites render and transform?
+
 Should be configurable for core:
 - blend provided to gameTexture
 - transform provided to gameTexture
 - blend function
 - background color
 - ctx image smoothing
+
+Remaining v1 tasks:
+- Refactor atlas script
+- Write rollup and webpack examples
+- Revise readme
+- Github actions and precommit hooks
+- npm publish action
 
 Planned features:
 - subdivisor and flexors
