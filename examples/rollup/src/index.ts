@@ -1,6 +1,7 @@
 import { Core } from "supersprite";
-import { primitives } from "./primitives";
 import { sprites } from "./sprites";
+import { primitives } from "./primitives";
+import { performance } from "./performance";
 
 const core = new Core({
     atlas: {
@@ -42,5 +43,6 @@ function main() {
 main();
 
 // Enable our buttons to change what we draw
-document.querySelector("#primitives").addEventListener("click", () => func = primitives);
 document.querySelector("#sprites").addEventListener("click", () => func = sprites);
+document.querySelector("#primitives").addEventListener("click", () => func = primitives);
+document.querySelector("#performance").addEventListener("click", () => func = performance);
