@@ -2,7 +2,7 @@
   "name": "supersprite-example-rollup",
   "version": "1.0.0",
   "description": "Example using supersprite with rollup",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "build": "rollup -c rollup.config.js",
     "refresh": "cd ../.. && npm run build && cd examples/rollup && npm install ../.. && npm run build"

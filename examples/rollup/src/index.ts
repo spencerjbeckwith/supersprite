@@ -1,4 +1,6 @@
-import { Color, Core } from "supersprite";
+import { Core } from "supersprite";
+import { primitives } from "./primitives";
+import { sprites } from "./sprites";
 
 const core = new Core({
     atlas: null,
@@ -8,22 +10,18 @@ const core = new Core({
     },
 });
 
-const red = new Color("#ff2222");
-const blue = new Color("#2222ff");
-const green = new Color("#22ff22");
-const yellow = new Color("#ffff22");
+// Function is swapped out to draw different things
+let func: (core: Core) => void = primitives;
 
 function main() {
     core.beginRender();
-
-    // "Hello world" primitive draw
-    const colors = [blue, red, yellow, green];
-    for (let i = 0; i <= 3; i++) {
-        core.draw.circle(80 + i * 50, 100, 40, 40, colors[i]);
-    }
-
+    func(core);
     core.endRender();
     requestAnimationFrame(main);
 }
 
 main();
+
+// Enable our buttons to change what we draw
+document.querySelector("#primitives").addEventListener("click", () => func = primitives);
+document.querySelector("#sprites").addEventListener("click", () => func = sprites);
