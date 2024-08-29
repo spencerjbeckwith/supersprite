@@ -185,7 +185,7 @@ export class Core {
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gameTexture, 0);
 
         // Prepare GL to start rendering
-        gl.clearColor(0, 0, 0.1, 1);
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
@@ -228,7 +228,7 @@ export class Core {
         // Draw to the framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         gl.viewport(0, 0, this.presenter.options.baseWidth, this.presenter.options.baseHeight);
-        gl.clearColor(0, 0.2, 0, 1);
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         if (ctx) {
             ctx.clearRect(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
@@ -251,7 +251,7 @@ export class Core {
         // Switch to correct framebuffer and texture
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
-        gl.clearColor(0.2, 0, 0, 1);
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
 
@@ -268,6 +268,7 @@ export class Core {
         gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.#positionsMatrix);
         gl.uniformMatrix3fv(this.shader.uniforms.textureMatrix, false, this.#identityMatrix);
         // TODO blend full game texture via uniform here
+        gl.uniform4f(this.shader.uniforms.blend, 1, 1, 1, 1);
         gl.uniform1i(this.shader.uniforms.textured, 1);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);

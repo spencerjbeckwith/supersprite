@@ -2,7 +2,6 @@
 
 # TODO: V3
 Issues to resolve:
-- Colors not appearing right based on the order they're used?
 - Will sprites render and transform?
 
 Should be configurable for core:
