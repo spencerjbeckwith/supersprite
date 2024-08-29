@@ -15,9 +15,26 @@ const core = new Core({
 // Function is swapped out to draw different things
 let func: (core: Core) => void = sprites;
 
+// Used to calculate FPS
+let delta = Date.now();
+const lastFrames: number[] = new Array(60);
+lastFrames.fill(60);
+
 function main() {
     core.beginRender();
     func(core);
+
+    // Determine and draw our FPS
+    const change = Date.now() - delta;
+    delta += change;
+    const fps = 1000 / change;
+    lastFrames.push(fps);
+    lastFrames.shift();
+    core.draw.text(`FPS: ${Math.round(lastFrames.reduce((f, c) => f + c) / lastFrames.length)}`, 300, 200, {
+        hAlign: "right",
+        vAlign: "bottom",
+    });
+
     core.endRender();
     requestAnimationFrame(main);
 }

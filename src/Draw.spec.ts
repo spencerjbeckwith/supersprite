@@ -320,6 +320,21 @@ describe("Draw", () => {
             }
         });
 
+        it("applies blend when provided", () => {
+            draw.spriteSpecial(s, 0, 0, 0, undefined, undefined, new Color("#001020"));
+            expect(spy.uniforms.blend[0]).toBe(0);
+            expect(spy.uniforms.blend[1]).toBeCloseTo(16 / 256);
+            expect(spy.uniforms.blend[2]).toBeCloseTo(32 / 256);
+            expect(spy.uniforms.blend[3]).toBe(1);
+        });
+
+        it("applies default blend", () => {
+            draw.spriteSpecial(s, 0, 0, 0, undefined, undefined, undefined);
+            for (let i = 0; i <= 3; i++) {
+                expect(spy.uniforms.blend[i]).toBe(1);
+            }
+        });
+
         it("makes the draw call", () => {
             draw.spriteSpecial(s, 2, 0, 0);
             expect(spy.drawn).toBe(true);

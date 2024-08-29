@@ -79,8 +79,11 @@ export interface DrawTextOptions {
 
 /** Configurable default values to use when drawing. */
 export interface DrawDefaults extends DrawTextOptions {
-    /** Color to use when drawing primitives, when no color is specified */
+    /** Color to use when drawing primitives, when no color is specified. Defaults to white. */
     primitiveColor?: Color;
+
+    /** Default color to blend all sprites to, when no blend is specified. Defaults to white, which is no blending applied. */
+    spriteBlend?: Color;
 }
 
 /** Responsible for all methods that actually render to the screen */
@@ -116,6 +119,7 @@ export class Draw {
         this.timer = timer;
         this.defaults = {
             primitiveColor: defaults?.primitiveColor ?? new Color("#ffffff"),
+            spriteBlend: defaults?.spriteBlend ?? new Color("#ffffff"),
             fontName: defaults?.fontName ?? "Arial",
             fontSize: defaults?.fontSize ?? 12,
             hAlign: defaults?.hAlign ?? "left",
@@ -228,15 +232,15 @@ export class Draw {
     }
 
     /** Draws an image from a sprite at (`x`, `y`). */
-    sprite(sprite: Sprite, image: number, x: number, y: number, transform?: Transform) {
+    sprite(sprite: Sprite, image: number, x: number, y: number, transform?: Transform, blend?: Color) {
         this.gl.bindVertexArray(this.shader.vao);
-        this.spriteSpecial(sprite, image, x, y, 6, transform);
+        this.spriteSpecial(sprite, image, x, y, 6, transform, blend);
         this.gl.bindVertexArray(null);
     }
 
     /** Draws a sprite animated at `animationSpeed` images per second at (`x`, `y`). */
-    spriteAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, transform?: Transform) {
-        this.sprite(sprite, this.#speedToImage(sprite, animationSpeed), x, y, transform);
+    spriteAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, transform?: Transform, blend?: Color) {
+        this.sprite(sprite, this.#speedToImage(sprite, animationSpeed), x, y, transform, blend);
     }
 
     /**
@@ -250,7 +254,7 @@ export class Draw {
      * 
      * `vertices` determines how many vertices should be drawn. This should correspond to the length of the positions/UVs lists, divided by 2.
      */
-    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, vertices = 6, transform?: Transform) {
+    spriteSpecial(sprite: Sprite, image: number, x: number, y: number, vertices = 6, transform?: Transform, blend?: Color) {
         image = this.#limitImage(sprite, image);
 
         // Transform to pixel space
@@ -265,6 +269,10 @@ export class Draw {
 
         // Set texture coordinates
         this.gl.uniformMatrix3fv(this.shader.uniforms.textureMatrix, false, sprite.images[image].t);
+
+        // Apply blend
+        const color = blend ?? this.defaults.spriteBlend;
+        this.gl.uniform4f(this.shader.uniforms.blend, color.red, color.green, color.blue, color.alpha);
         
         // Do the draw call
         this.gl.uniform1i(this.shader.uniforms.textured, 1);
@@ -277,8 +285,8 @@ export class Draw {
      * As with `spriteSpecial()`, this function expects positions and UVs to be set ahead of time via `draw.shader.setPositions()` and `draw.shader.setUVs()`.
      * The final number of vertices should also be provided to this function. 
      */
-    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, vertices = 6, transform?: Transform) {
-        this.spriteSpecial(sprite, this.#speedToImage(sprite, animationSpeed), x, y, vertices, transform);
+    spriteSpecialAnim(sprite: Sprite, animationSpeed: number, x: number, y: number, vertices = 6, transform?: Transform, blend?: Color) {
+        this.spriteSpecial(sprite, this.#speedToImage(sprite, animationSpeed), x, y, vertices, transform, blend);
     }
 
     /** 

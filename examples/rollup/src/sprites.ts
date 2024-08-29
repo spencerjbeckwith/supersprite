@@ -1,4 +1,4 @@
-import { Core, Transform } from "supersprite";
+import { Colors, Core, Transform } from "supersprite";
 import spr from "./atlas";
 
 export function sprites(core: Core) {
@@ -7,27 +7,42 @@ export function sprites(core: Core) {
     });
 
     // Draw just a regular image
-    core.draw.sprite(spr.guy, 0, 50, 100);
+    core.draw.sprite(spr.guy, 0, 50, 80);
+    core.draw.sprite(spr.guy, 0, 50, 120, undefined, Colors.blue);
 
     // And the sprite animated
-    core.draw.spriteAnim(spr.guy, 6, 90, 100);
+    core.draw.spriteAnim(spr.guy, 6, 90, 80);
+    core.draw.spriteAnim(spr.guy, 6, 90, 120, undefined, Colors.lime);
 
     // Demonstrating a scale
-    core.draw.spriteAnim(spr.guy, 6, 130, 100, new Transform()
+    core.draw.spriteAnim(spr.guy, 6, 130, 80, new Transform()
         .translate(0.5, 0.5)
         .scale(1.5 + core.timer.wave(3) * 0.5, 1.5 + core.timer.wave(3) * 0.5)
         .translate(-0.5, -0.5)
     );
+    core.draw.spriteAnim(spr.guy, 6, 130, 120, new Transform()
+        .translate(0.5, 0.5)
+        .scale(1.5 + core.timer.wave(3) * 0.5, 1.5 + core.timer.wave(3) * 0.5)
+        .translate(-0.5, -0.5),
+        Colors.yellow,
+    );
 
     // Demonstrating a rotation
-    core.draw.spriteAnim(spr.guy, 6, 170, 100, new Transform()
+    core.draw.spriteAnim(spr.guy, 6, 170, 80, new Transform()
         .translate(0.5, 0.5)
         .rotateDeg(core.timer.current * 4)
         .translate(-0.5, -0.5)
     );
+    core.draw.spriteAnim(spr.guy, 6, 170, 120, new Transform()
+        .translate(0.5, 0.5)
+        .rotateDeg(core.timer.current * 4)
+        .translate(-0.5, -0.5),
+        Colors.red,
+    );
 
     // Demonstarting a translation
-    core.draw.spriteAnim(spr.guy, 6, 210, 100, new Transform().translate(0, core.timer.wave(2) * 0.6));
+    core.draw.spriteAnim(spr.guy, 6, 210, 80, new Transform().translate(0, core.timer.wave(2) * 0.6));
+    core.draw.spriteAnim(spr.guy, 6, 210, 120, new Transform().translate(0, core.timer.wave(2) * 0.6), Colors.navy);
 
     // Demonstrating a contortion (complex)
     const c = core.timer.wave(3) * 0.25;
@@ -51,9 +66,15 @@ export function sprites(core: Core) {
     ];
     core.shader.setPositions(contortion);
     core.shader.setUVs(contortionUVs);
-    core.draw.spriteSpecialAnim(spr.guy, 6, 250, 100, contortion.length / 2, new Transform()
+    core.draw.spriteSpecialAnim(spr.guy, 6, 250, 80, contortion.length / 2, new Transform()
         .translate(0.5, 0.5)
         .scale(2, 2) // Scale up this contortion so you can better see the change
         .translate(-0.5, -0.5)
+    );
+    core.draw.spriteSpecialAnim(spr.guy, 6, 250, 120, contortion.length / 2, new Transform()
+        .translate(0.5, 0.5)
+        .scale(2, 2)
+        .translate(-0.5, -0.5),
+        Colors.fuchsia,
     );
 }

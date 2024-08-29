@@ -2,7 +2,6 @@
 
 # TODO: V3
 Do next:
-- sprite blending - design palette swap ability, maybe?
 - extended core configuration (see next section)
 
 Should be configurable for core:
@@ -21,7 +20,7 @@ Remaining v1 tasks:
 
 Planned features:
 - subdivisor and flexors
-- palette swap and blending on sprite calls
+- palette swap on sprite calls
 - sprite-based fonts
 - Loader (provided sprite data, atlas is compiled on the fly)
 
