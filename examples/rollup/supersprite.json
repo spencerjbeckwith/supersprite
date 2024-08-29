@@ -1,0 +1,14 @@
+{
+    "dir": "assets",
+    "outputImage": "./atlas.png",
+    "outputTS": "./src/atlas.ts",
+    "atlasWidth": 256,
+    "atlasHeight": 256,
+    "separationW": 16,
+    "separationH": 16,
+    "transparent": {
+        "red": 1,
+        "green": 1,
+        "blue": 1
+    }
+}

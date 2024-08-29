@@ -1,8 +1,9 @@
 # supersprite
 
 # TODO: V3
-Issues to resolve:
-- Will sprites render and transform?
+Do next:
+- sprite blending - design palette swap ability, maybe?
+- extended core configuration (see next section)
 
 Should be configurable for core:
 - blend provided to gameTexture

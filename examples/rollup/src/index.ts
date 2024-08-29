@@ -3,7 +3,9 @@ import { primitives } from "./primitives";
 import { sprites } from "./sprites";
 
 const core = new Core({
-    atlas: null,
+    atlas: {
+        url: "./atlas.png",
+    },
     presenter: {
         baseWidth: 300,
         baseHeight: 200,
@@ -11,7 +13,7 @@ const core = new Core({
 });
 
 // Function is swapped out to draw different things
-let func: (core: Core) => void = primitives;
+let func: (core: Core) => void = sprites;
 
 function main() {
     core.beginRender();

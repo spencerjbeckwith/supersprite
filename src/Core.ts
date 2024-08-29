@@ -159,9 +159,12 @@ export class Core {
             image.addEventListener("load", () => {
                 gl.bindTexture(gl.TEXTURE_2D, tex);
                 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+                gl.uniform1i(this.shader.uniforms.atlas, 0);
+                gl.activeTexture(gl.TEXTURE0);
                 this.atlas.texture = tex;
                 this.atlas.image = image;
             });
+            image.addEventListener("error", console.error);
         }
 
         // Set up the game texture

@@ -253,6 +253,9 @@ export class Draw {
     spriteSpecial(sprite: Sprite, image: number, x: number, y: number, vertices = 6, transform?: Transform) {
         image = this.#limitImage(sprite, image);
 
+        // Transform to pixel space
+        this.gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.projectionMatrix);
+
         // Set transformations
         const t = new Transform().translate(x, y).scale(sprite.width, sprite.height);
         if (transform) {
