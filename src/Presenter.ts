@@ -34,9 +34,6 @@ export interface PresenterOptions {
      */
     responsiveness?: Responsiveness;
 
-    /** If the 2D rendering context should have smoothing enabled or not. If the 2D context is disabled this has no effect. Defaults to false. */
-    ctxSmoothingEnabled?: boolean;
-
     /**
      * If `responsiveness` is set to `scale`, this ensures that the canvases will only scale to whole numbers, preventing bizarre visual artifacts and distortions from fractional pixels.
      * 
@@ -114,7 +111,6 @@ export class Presenter {
             glCanvas,
             ctxCanvas,
             responsiveness: options.responsiveness ?? "scale",
-            ctxSmoothingEnabled: options.ctxSmoothingEnabled ?? false,
             scalePerfectly: options.scalePerfectly ?? true,
             onResize: options.onResize ?? (() => {}),
         };

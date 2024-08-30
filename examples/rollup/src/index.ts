@@ -1,7 +1,8 @@
-import { Core } from "supersprite";
+import { Color, Core, Transform } from "supersprite";
 import { sprites } from "./sprites";
 import { primitives } from "./primitives";
 import { performance } from "./performance";
+import { globalTransform } from "./globaltransform";
 
 const core = new Core({
     atlas: {
@@ -10,6 +11,10 @@ const core = new Core({
     presenter: {
         baseWidth: 300,
         baseHeight: 200,
+    },
+    drawDefaults: {
+        backgroundColor: new Color("#151515"),
+        matchPageToBackground: true,
     },
 });
 
@@ -36,7 +41,22 @@ function main() {
         vAlign: "bottom",
     });
 
-    core.endRender();
+    if (func === globalTransform) {
+        // Apply some funky transforms to the entire game texture in this example
+        const blendR = 0.5 + 0.5 * core.timer.wave(2);
+        const blendG = 0.5 + 0.5 * core.timer.wave(4);
+        const blendB = 0.5 + 0.5 * core.timer.wave(6);
+        const scale = 1 + core.timer.wave(8) * 0.25;
+        core.endRender(undefined, undefined, new Transform()
+            .translate(0.5, 0.5)
+            .scale(scale, scale)
+            .rotateDeg(core.timer.current)
+            .translate(-0.5, -0.5),
+        new Color(blendR, blendG, blendB));
+    } else {
+        // All other examples
+        core.endRender();
+    }
     requestAnimationFrame(main);
 }
 
@@ -46,3 +66,4 @@ main();
 document.querySelector("#sprites").addEventListener("click", () => func = sprites);
 document.querySelector("#primitives").addEventListener("click", () => func = primitives);
 document.querySelector("#performance").addEventListener("click", () => func = performance);
+document.querySelector("#globaltransform").addEventListener("click", () => func = globalTransform);

@@ -2,6 +2,7 @@ import { Draw, DrawDefaults } from "./Draw";
 import { Presenter, PresenterOptions } from "./Presenter";
 import { Shader } from "./Shader";
 import { MAX_TRANSFORMATIONS } from "./shaders/vertex";
+import { Color } from "./util/Color";
 import { Timer } from "./util/Timer";
 import { Transform } from "./util/Transform";
 
@@ -106,6 +107,9 @@ export class Core {
     /** Pre-initialized array of zeros used to unset any prior transformations before rendering the game texture */
     #transformationReset: number[];
 
+    /** Whatever color the background is set to in `beginRender()`. */
+    #frameBackgroundColor: Color;
+
     constructor(options: SuperspriteOptions) {
         // Position matrix to place the game texture into clipspace
         this.#positionsMatrix = [
@@ -163,6 +167,7 @@ export class Core {
                 gl.activeTexture(gl.TEXTURE0);
                 this.atlas.texture = tex;
                 this.atlas.image = image;
+                this.draw.atlasImage = image;
             });
             image.addEventListener("error", console.error);
         }
@@ -193,12 +198,14 @@ export class Core {
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        this.#frameBackgroundColor = new Color("#000000");
 
         // Listen for view change events to update our projection
         this.presenter.options.onResize = (newWidth, newHeight) => {
             // Fix 2D context
             const ctx = this.presenter.ctx;
             if (ctx) {
+                ctx.imageSmoothingEnabled = this.draw.defaults.contextSmoothing;
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.scale(newWidth / this.presenter.options.baseWidth, newHeight / this.presenter.options.baseHeight);
             }
@@ -220,19 +227,24 @@ export class Core {
         if (ctx) {
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(this.presenter.scaleX, this.presenter.scaleY);
+            ctx.imageSmoothingEnabled = this.draw.defaults.contextSmoothing;
         }
     }
 
     /** Should be called at the start of every frame to initialize drawing */
-    beginRender() {
+    beginRender(backgroundColor?: Color) {
         const gl = this.presenter.gl;
         const ctx = this.presenter.ctx;
 
         // Draw to the framebuffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
         gl.viewport(0, 0, this.presenter.options.baseWidth, this.presenter.options.baseHeight);
-        gl.clearColor(0, 0, 0, 1);
+
+        // Clear background to specified color, or default
+        const bg = backgroundColor ?? this.draw.defaults.backgroundColor;
+        gl.clearColor(bg.red, bg.green, bg.blue, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
+        this.#frameBackgroundColor = bg;
         if (ctx) {
             ctx.clearRect(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
         }
@@ -248,31 +260,38 @@ export class Core {
     }
 
     /** Should be called at the end of every frame to render the game texture to the screen */
-    endRender(positions?: number[], UVs?: number[]) {
+    endRender(positions?: number[], UVs?: number[], transform?: Transform, blend?: Color) {
         const gl = this.presenter.gl;
 
         // Switch to correct framebuffer and texture
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.viewport(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
-        gl.clearColor(0, 0, 0, 1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
         gl.bindTexture(gl.TEXTURE_2D, this.gameTexture);
+
+        gl.viewport(0, 0, this.presenter.currentWidth, this.presenter.currentHeight);
+        // Multiply background color by our blend to avoid "leakage" behind the game texture
+        // Also keep the page matched to this color, if configured
+        const bgRed = this.#frameBackgroundColor.red * (blend?.red ?? 1);
+        const bgGreen = this.#frameBackgroundColor.green * (blend?.green ?? 1);
+        const bgBlue = this.#frameBackgroundColor.blue * (blend?.blue ?? 1);
+        gl.clearColor(bgRed, bgGreen, bgBlue, 1);
+        if (this.draw.defaults.matchPageToBackground) {
+            document.body.style.backgroundColor = new Color(bgRed, bgGreen, bgBlue).toHex();
+        }
+        gl.clear(gl.COLOR_BUFFER_BIT);
 
         this.shader.setPositions(positions);
         this.shader.setUVs(UVs);
 
-        // TODO: apply transformation to the game texture here
-        // If we're applying a transformation, let's understand why the position matrix is set the way it is first
-        // and how can we "append" transformations to a result matrix already? We may need to expand Transform a little bit
-        // Until then, reset any transformations from prior renders
-        gl.uniform3fv(this.shader.uniforms.transformations, this.#transformationReset);
+        // Apply transformation (or a reset)
+        gl.uniform3fv(this.shader.uniforms.transformations, transform?.toArray() ?? this.#transformationReset);
 
         // Set uniforms and render the game texture
         gl.uniformMatrix3fv(this.shader.uniforms.positionMatrix, false, this.#positionsMatrix);
         gl.uniformMatrix3fv(this.shader.uniforms.textureMatrix, false, this.#identityMatrix);
-        // TODO blend full game texture via uniform here
-        gl.uniform4f(this.shader.uniforms.blend, 1, 1, 1, 1);
         gl.uniform1i(this.shader.uniforms.textured, 1);
+
+        // Set blend if provided
+        gl.uniform4f(this.shader.uniforms.blend, blend?.red ?? 1, blend?.green ?? 1, blend?.blue ?? 1, blend?.alpha ?? 1);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         gl.bindTexture(gl.TEXTURE_2D, null); // Unbind the game texture or we may create a feedback loop next frame

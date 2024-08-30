@@ -1,15 +1,6 @@
 # supersprite
 
 # TODO: V3
-Do next:
-- extended core configuration (see next section)
-
-Should be configurable for core:
-- blend provided to gameTexture
-- transform provided to gameTexture
-- blend function
-- background color
-- ctx image smoothing
 
 Remaining v1 tasks:
 - Refactor atlas script

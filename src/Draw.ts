@@ -84,6 +84,15 @@ export interface DrawDefaults extends DrawTextOptions {
 
     /** Default color to blend all sprites to, when no blend is specified. Defaults to white, which is no blending applied. */
     spriteBlend?: Color;
+
+    /** Default color behind all other drawing. Defaults to black. */
+    backgroundColor?: Color;
+
+    /** If true, the background color of the HTML will be updated to match the current background. Defaults to false. */
+    matchPageToBackground?: boolean;
+
+    /** If true, drawings on the 2D context (if enabled) will be smoothed/antialiased, which is typically undesirable for low resolutions. Defaults to false. */
+    contextSmoothing?: boolean;
 }
 
 /** Responsible for all methods that actually render to the screen */
@@ -120,6 +129,9 @@ export class Draw {
         this.defaults = {
             primitiveColor: defaults?.primitiveColor ?? new Color("#ffffff"),
             spriteBlend: defaults?.spriteBlend ?? new Color("#ffffff"),
+            backgroundColor: defaults?.backgroundColor ?? new Color("#000000"),
+            matchPageToBackground: defaults?.matchPageToBackground ?? false,
+            contextSmoothing: defaults?.contextSmoothing ?? false,
             fontName: defaults?.fontName ?? "Arial",
             fontSize: defaults?.fontSize ?? 12,
             hAlign: defaults?.hAlign ?? "left",
@@ -305,7 +317,7 @@ export class Draw {
             throw new DrawError("Unable to draw sprites on the 2D canvas context as it is not initialized.");
         }
         if (!this.atlasImage) {
-            throw new DrawError("atlasImage must be specified to draw sprites on the 2D canvas context.");
+            return; // Don't throw, since we don't really have a good way to wait for this image to load
         }
 
         const i = sprite.images[this.#limitImage(sprite, image)];

@@ -1,6 +1,7 @@
 import { Core, CoreError } from "./Core";
 import sinon from "sinon";
 import expect from "expect";
+import { Color } from "./util/Color";
 
 describe("Core", () => {
     
@@ -159,5 +160,17 @@ describe("Core", () => {
         core.beginRender();
         expect(bindTexture.called).toBeTruthy();
         expect(bindTexture.args[0][1]).toBe("texture"); // normally this would be the texture object
+    });
+
+    it("will match the HTML background to the game", () => {
+        const core = new Core({
+            ...opts,
+            drawDefaults: {
+                matchPageToBackground: true,
+            }
+        });
+        core.beginRender(new Color("#ffffff")); // Color gets saved when supplied here...
+        core.endRender(); // But page style isn't updated until endRender()
+        expect(document.body.style.backgroundColor).toBe("rgb(255, 255, 255)"); // Unsure why JSDOM uses this instead of the hash string I gave it
     });
 });

@@ -360,11 +360,10 @@ describe("Draw", () => {
             }).toThrow(DrawError);
         });
 
-        it("throws if there was no atlas image specified", () => {
+        it("silent fails if there was no atlas image specified", () => {
             const d = new Draw(spy.shader, spy.gl, spy._ctx, null, [], timer);
-            expect(() => {
-                d.spriteCtx(s, 0, 0, 0);
-            }).toThrow(DrawError);
+            d.spriteCtx(s, 0, 0, 0);
+            expect(spy.ctx.drawImage.called).toBe(false);
         });
 
         it("limits the drawn image", () => {
