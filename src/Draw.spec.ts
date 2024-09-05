@@ -1,10 +1,11 @@
-import { Draw, DrawError, Sprite } from "./Draw";
+import { Draw, DrawError } from "./Draw";
 import expect from "expect";
 import { Shader } from "./Shader";
 import { Color } from "./util/Color";
 import { Timer } from "./util/Timer";
 import sinon from "sinon";
 import { Transform } from "./util/Transform";
+import { Sprite } from "./types";
 
 /** To help us track GL/ctx state in our tests - used in this file only */
 class Spy {

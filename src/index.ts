@@ -6,8 +6,10 @@ import { Shader } from "./Shader";
 import { Draw } from "./Draw";
 import { Presenter } from "./Presenter";
 import { Core } from "./Core";
+import { Sprite, SpriteImage, SpriteData } from "./types";
 
 export {
+    // Classes
     Color,
     Colors,
     Timer,
@@ -16,4 +18,9 @@ export {
     Draw,
     Presenter,
     Core,
+
+    // Types
+    Sprite,
+    SpriteImage,
+    SpriteData,
 };
