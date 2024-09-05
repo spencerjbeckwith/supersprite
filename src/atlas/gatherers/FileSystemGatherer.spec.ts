@@ -47,9 +47,19 @@ describe("FileSystemGatherer", () => {
         });
         const s = await fsg.gather();
         expect(s.length).toBe(3);
-        expect(s[0]).toBeInstanceOf(ImageSpriteSource);
-        expect(s[1]).toBeInstanceOf(ImageSheetSpriteSource);
-        expect(s[2]).toBeInstanceOf(GIFSpriteSource);
+        while (s.length > 0) {
+            // Order returned in this list is arbitrary, so check based on file path
+            const check = s.pop()!;
+            if (check.path === path.join(temp, "1.png")) {
+                expect(check).toBeInstanceOf(ImageSpriteSource);
+            }
+            if (check.path === path.join(temp, "2.sheet.png")) {
+                expect(check).toBeInstanceOf(ImageSheetSpriteSource);
+            }
+            if (check.path === path.join(temp, "3.gif")) {
+                expect(check).toBeInstanceOf(GIFSpriteSource);
+            }
+        }
     });
 
     it("identifies directory entries", async () => {
@@ -101,15 +111,14 @@ describe("FileSystemGatherer", () => {
     });
 
     it("logs warnings if there are unhandled file extensions in the directory", async () => {
-        const spy = sinon.spy(console, "log");
         createFile("1.asdf");
         const fsg = new FileSystemGatherer({
             directory: temp,
             log: true,
         });
+        const stub = sinon.stub(fsg, "log");
         await fsg.gather();
-        expect(spy.called).toBe(true);
-        expect(spy.args[0][0]).toMatch(/warn/gi);
-        spy.restore();
+        expect(stub.called).toBe(true);
+        expect(stub.args[0][0]).toMatch(/no source/gi);
     });
 });
