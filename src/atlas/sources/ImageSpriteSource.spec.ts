@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
-import { ImageSpriteSource } from "./ImageSpriteSource";
+import { ImageSpriteSource, ImageSpriteSourceError } from "./ImageSpriteSource";
 import expect from "expect";
+import Jimp from "jimp";
 
 const temp = ".tmp-ImageSpriteSource";
 
@@ -9,13 +10,17 @@ describe("ImageSpriteSource", () => {
 
     const f1 = path.join(temp, "iss.png");
     const f2 = path.join(temp, "iss.2.png");
+    const f3 = path.join(temp, "file.txt");
 
-    before(() => {
+    before(async () => {
         if (!fs.existsSync(temp)) {  
             fs.mkdirSync(temp);
         }
-        fs.writeFileSync(f1, Buffer.from("1234"));
-        fs.writeFileSync(f2, Buffer.from("5678"));
+        await Promise.all([
+            new Jimp(1, 1, 0).writeAsync(f1),
+            new Jimp(1, 1, 0).writeAsync(f2),
+        ]);
+        fs.writeFileSync(f3, Buffer.from("not an image"));
     });
 
     // Remove the test directory
@@ -38,13 +43,15 @@ describe("ImageSpriteSource", () => {
         expect(data.name).toBe("iss");
     });
 
-    it("sets the data to the buffer from the filesystem", async () => {
+    it("sets the data", async () => {
         const iss = new ImageSpriteSource(f1);
         const data = await iss.read();
         expect(data.images.length).toBe(1);
-        expect(data.images[0].data[0]).toBe(0x31);
-        expect(data.images[0].data[1]).toBe(0x32);
-        expect(data.images[0].data[2]).toBe(0x33);
-        expect(data.images[0].data[3]).toBe(0x34);
+        expect(data.images[0].data).toBeTruthy();
+    });
+
+    it("throws if the data is not an expected image format", async () => {
+        const iss = new ImageSpriteSource(f3);
+        await expect(iss.read()).rejects.toThrow(ImageSpriteSourceError);
     });
 });
