@@ -84,6 +84,11 @@ export class Color {
         if (b.length < 2) b = "0" + b;
         return `#${r}${g}${b}`;
     }
+
+    /** Returns if the components of this Color exactly match another Color, ignoring the alpha channel */
+    is(other: Color): boolean {
+        return (this.toHex() === other.toHex());
+    }
 }
 
 /** Error class used when Colors fail validation */

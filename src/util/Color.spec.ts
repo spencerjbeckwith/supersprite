@@ -90,4 +90,10 @@ describe("Color", () => {
         const c = new Color(0.05, 0.05, 0.05);
         expect(c.toHex()).toBe("#0d0d0d");
     });
+
+    it("can be matched with other instances via is()", () => {
+        const c1 = new Color(0.05, 0.05, 0.05);
+        const c2 = new Color("#0d0d0d");
+        expect(c1.is(c2)).toBe(true);
+    });
 });
