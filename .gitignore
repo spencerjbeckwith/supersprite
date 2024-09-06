@@ -3,3 +3,4 @@ dist/
 src-v2/
 .nyc_output/
 .tmp/
+.tmp-*/
