@@ -93,7 +93,7 @@ describe("Shader", () => {
         s1.onSecondCall().returns(22); // texture
         const s2 = sinon.stub(gl, "vertexAttribPointer");
         const shader = new Shader(gl);
-        shader.setPositions(); // TODO add fake args here
+        shader.setPositions();
         expect(s2.getCall(0).args[0] === 11);
         s1.restore();
         s2.restore();
@@ -105,7 +105,7 @@ describe("Shader", () => {
         s1.onSecondCall().returns(22); // texture
         const s2 = sinon.stub(gl, "vertexAttribPointer");
         const shader = new Shader(gl);
-        shader.setUVs(); // TODO add fake args here
+        shader.setUVs();
         expect(s2.getCall(0).args[0] === 22);
         s1.restore();
         s2.restore();

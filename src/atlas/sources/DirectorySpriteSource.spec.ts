@@ -9,7 +9,7 @@ const temp = ".tmp-DirectorySpriteSource";
 const s1 = "sprite";
 const s2 = "sprite2";
 const s3 = "empty";
-const cleanup = false; // Set to false if you want to view the generated GIFs after running tests
+const cleanup = true; // Set to false if you want to view the generated GIFs after running tests
 
 describe("DirectorySpriteSource", () => {
 

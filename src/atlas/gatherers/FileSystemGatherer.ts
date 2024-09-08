@@ -33,6 +33,7 @@ const defaultFileSystemSources: FileSystemGathererConfig["sources"] = {
     "sheet.jpg": ImageSheetSpriteSource,
     "sheet.jpeg": ImageSheetSpriteSource,
     "gif": GIFSpriteSource,
+    "json": null,
     ".": DirectorySpriteSource,
 };
 
