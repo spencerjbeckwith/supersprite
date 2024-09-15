@@ -5,7 +5,6 @@ import Jimp from "jimp";
 
 /** Reads GIFs as sprites */
 export class GIFSpriteSource extends FileSystemSpriteSource {
-    // Arg possible here for dependency injection
     async read(): Promise<SpriteData> {
         const gif = await GifUtil.read(this.path);
         const images: Jimp[] = [];
@@ -49,6 +48,8 @@ export class GIFSpriteSource extends FileSystemSpriteSource {
         const buffers = await Promise.all(images.map((jimp) => jimp.getBufferAsync("image/png")));
         return {
             name: this.name,
+            width: gif.width,
+            height: gif.height,
             images: buffers.map((buffer) => ({
                 data: buffer,
             })),

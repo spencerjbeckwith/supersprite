@@ -31,6 +31,12 @@ export interface SpriteData {
     /** Identifier of the sprite */
     name: string;
 
+    /** Width of the sprite in pixels */
+    width: number;
+
+    /** Height of the sprite in pixels */
+    height: number;
+
     /** List of images that comprise this sprite */
     images: {
         /** Loaded data that represents this image */

@@ -35,6 +35,8 @@ export class DirectorySpriteSource extends FileSystemSpriteSource {
         // Return sprite data
         return {
             name: this.name,
+            width: imageData[0].width,
+            height: imageData[0].height,
             images: imageData.map((dat) => ({
                 data: dat.images[0].data,
             })),

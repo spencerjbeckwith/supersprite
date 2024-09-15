@@ -1,6 +1,7 @@
 import { SpriteData } from "../../types";
 import { FileSystemSpriteSource } from "./FileSystemSpriteSource";
 import fs from "fs/promises";
+import Jimp from "jimp";
 
 /**
  * Loads individual image files as one-frame sprites.
@@ -38,8 +39,12 @@ export class ImageSpriteSource extends FileSystemSpriteSource {
             throw new ImageSpriteSourceError(`Sprite source ${this.path} is not a valid image!`);
         }
 
+        const image = await Jimp.read(buffer);
+
         return {
             name: this.name,
+            width: image.getWidth(),
+            height: image.getHeight(),
             images: [{
                 data: buffer,
             }],

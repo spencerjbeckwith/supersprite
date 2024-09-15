@@ -84,6 +84,8 @@ export class ImageSheetSpriteSource extends FileSystemSpriteSource {
         // Return
         return {
             name: this.name,
+            width: frames[0].getWidth(),
+            height: frames[0].getHeight(),
             images: await Promise.all(frames.map(async (jimp) => {
                 return {
                     data: await jimp.getBufferAsync(Jimp.MIME_PNG),
