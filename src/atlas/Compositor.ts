@@ -1,4 +1,4 @@
-import { Sprite, SpriteData } from "../types";
+import { Sprite, SpriteData, SpriteImage } from "../types";
 import { Gatherer } from "./gatherers/Gatherer";
 import Jimp from "jimp";
 
@@ -47,29 +47,32 @@ export class Compositor {
     /** If this Compositor may print to the console with `Compositor.log()`. Defaults to true. */
     logEnabled: boolean;
 
+    /** The required height of an atlas column before the atlas expands horizontally. Defaults to 512. */
+    targetHeight: number;
+
     /** 
      * Indicates which areas of the atlas which are already occupied.
      * 
-     * Each column of `granularityX` width is represented by each index of the array.
-     * The value of the array indicates the number below which *that column* is occupied by sprites.
-     * Therefore, any Y pixel value greater than or equal to the value at that index is unoccupied.
-     * Note that that just refers to one column - if placing a sprite greater than `granularityX` width,
-     * multiple columns must be checked.
+     * Each column of `granularityX` width is represented by each index of the array,
+     * and each slot of `granularityY` height is held within a list at each index.
+     * 
+     * In other words, top-level array stores all rows and each nested array is the column, going down.
      * 
      * For convenience, use the `setOccupied` and `isOccupied` functions of this class.
      * 
      * Atlas width is determined by the length of this array times `granularityX`,
-     * while atlas height is determined by the maximum value of any index in the array.
+     * while atlas height is determined by the maximum length times `granularityY` of any sub-array.
      * 
      * This array is expected to expand while mapping image positions in the atlas.
      */
-    occupied: number[];
+    occupied: boolean[][];
 
-    constructor(gatherer?: Gatherer, logEnabled = true) {
+    constructor(gatherer?: Gatherer, logEnabled = true, targetHeight = 512) {
         this.gatherer = gatherer;
         this.granularityX = null;
         this.granularityY = null;
         this.logEnabled = logEnabled;
+        this.targetHeight = targetHeight;
         this.occupied = [];
     }
 
@@ -102,38 +105,59 @@ export class Compositor {
         return [...sprites].sort((s1, s2) => (s1.width * s1.height) - (s2.width * s2.height));
     }
 
-    /** Returns the start and end column indices, inclusive, that should be checked for placing a sprite with the given pixel width at the given pixel X position. */
-    getOccupiedColumnRange(x: number, width: number): { start: number, end: number } {
+    /** Returns the start and end indices, inclusive, that should be checked for placing a sprite. */
+    getOccupiedRange(x: number, y: number, width: number, height: number): { startX: number, endX: number, startY: number, endY: number } {
         const gx = this.granularityX ?? 1;
+        const gy = this.granularityY ?? 1;
         const result = {
-            start: Math.floor(x / gx),
-            end: Math.floor((x + width - 1) / gx),
+            startX: Math.floor(x / gx),
+            endX: Math.floor((x + width - 1) / gx),
+            startY: Math.floor(y / gy),
+            endY: Math.floor((y + height - 1)/ gy),
         };
-        // If we go outside our current range, extend the occupied array
-        if (result.end > this.occupied.length) {
-            const padding = new Array(result.end - this.occupied.length);
-            padding.fill(0);
-            this.occupied.push(...padding);
+
+        // If we go outside our current range, extend the occupied arrays to ensure we don't wind up with out-of-range errors
+        // First, ensure we have every column
+        if (result.endX >= this.occupied.length) {
+            // Add 1 to end result here (and below) because we are returning the index number, not the length
+            while (this.occupied.length < result.endX + 1) {
+                this.occupied.push([]);
+            }
         }
+
+        // Now iterate over the ranges for each column
+        for (let x = result.startX; x <= result.endX; x++) {
+            const column = this.occupied[x];
+            if (result.endY >= column.length) {
+                while (column.length < result.endY + 1) {
+                    column.push(false);
+                }
+            }
+        }
+
         return result;
     }
 
     /** Returns if a rectangle of the provided size may be mapped into the atlas at the given pixel location */
-    isOccupied(x: number, y: number, width: number): boolean {
-        const { start, end } = this.getOccupiedColumnRange(x, width);
-        for (let i = start; i <= end; i++) {
-            if (this.occupied[i] > y) {
-                return true;
+    isOccupied(x: number, y: number, width: number, height: number): boolean {
+        const { startX, endX, startY, endY } = this.getOccupiedRange(x, y, width, height);
+        for (let x = startX; x <= endX; x++) {
+            for (let y = startY; y <= endY; y++) {
+                if (this.occupied[x][y]) {
+                    return true;
+                }
             }
         }
         return false;
     }
-
+    
     /** Sets the atlas status for a region to be occupied at a pixel location and prevent other images being placed on top */
     setOccupied(x: number, y: number, width: number, height: number) {
-        const { start, end } = this.getOccupiedColumnRange(x, width);
-        for (let i = start; i <= end; i++) {
-            this.occupied[i] = y + height;
+        const { startX, endX, startY, endY } = this.getOccupiedRange(x, y, width, height);
+        for (let x = startX; x <= endX; x++) {
+            for (let y = startY; y <= endY; y++) {
+                this.occupied[x][y] = true;
+            }
         }
     }
 
@@ -142,28 +166,106 @@ export class Compositor {
         if (this.granularityX === null || this.granularityY === null) {
             this.setGranularity(sprites);
         }
+        const start = Date.now();
     
-        // cx/cy: current X and Y in our atlas. gx/gy: granularity (smallest pixel distance between sprites)
-        let cx = 0;
-        let cy = 0;
-        const gx = this.granularityX;
-        const gy = this.granularityY;
+        // gx/gy: granularity (smallest pixel distance between sprites)
+        const gx = this.granularityX!;
+        const gy = this.granularityY!;
+        const atlasMap: AtlasMap = {
+            sprites: [],
+            locations: [],
+            width: 0,
+            height: 0,
+        };
 
         // Empty our array from the front
         const remaining = [...sprites];
+
+        // For every sprite in our list...
         while (remaining.length > 0) {
-            const place = remaining.shift();
+            // Because every image of each sprite is the same size, no need to re-order them - sprite images are placed in sequential order
+            const place = remaining.shift()!;
+            const images = [...place.images];
+            const imageData: SpriteImage[] = [];
 
-            // What'll be the best way to lay out our sprites?
-            // We can go an arbitrary distance vertically before we move along horizontally,
-            // so what is the end goal? Do we want a square-ish atlas?
-            // Why not just make the atlas very long and thin?
-            // Maybe we should set an arbitary max-height and just go from there
+            // For every image in our sprite...
+            while (images.length > 0) {
+                const image = images.shift()!;
+                // Iterate over every position via granularity until we find a valid spot
+                // (There's probably a lot of room for optimization here...)
+                let cx = 0;
+                let cy = 0;
+                while (this.isOccupied(cx, cy, place.width, place.height)) {
+                    cy += gy;
+                    // targetHeight is arbitrary, but should help your atlas be more square
+                    if (cy + place.height > this.targetHeight) {
+                        cx += gx;
+                        cy = 0;
+                    }
+                }
+    
+                // By now, cx and cy are set to a valid spot for this sprite
+                this.setOccupied(cx, cy, place.width, place.height);
 
-            // ...
+                // We have two things to track per sprite image:
+                // 1: the image data - what is the matrix we need to select this sprite? This is used by the engine.
+                // 2: the location data - what buffer is placed at what X/Y coord in the atlas? This is only used to make the atlas.
+                imageData.push({
+                    x: cx,
+                    y: cy,
+                    t: [
+                        // Without knowing our atlas size yet, we cannot set our X coord yet
+                        // We have to come back to this after every image has been placed and we know our atlas width and height
+                        1, 0, 0,
+                        0, 1, 0,
+                        0, 0, 1
+                    ],
+                });
+                atlasMap.locations.push({
+                    image: image.data,
+                    x: cx,
+                    y: cy,
+                });
+            }
+
+            // Add our sprite to the map
+            atlasMap.sprites.push({
+                name: place.name,
+                width: place.width,
+                height: place.height,
+                images: imageData,
+            });
         }
 
-        throw new CompositorError("Not implemented");
+        // Update our map with our new width/height
+        atlasMap.width = this.occupied.length * gx;
+        atlasMap.height = Math.max(...this.occupied.map((column) => column.length * gy));
+
+        // Now update our sprite data matrices accounting for atlas width and height
+        this.setMatrices(atlasMap);
+
+        this.log(`mapped out ${atlasMap.locations.length} images in ${Date.now() - start}ms`);
+        return atlasMap;
+    }
+
+    /**
+     * Updates the sprite data of the AtlasMap to properly set the location of each image within the atlas.
+     * 
+     * This should be called after the atlas size has been determined (meaning `width` and `height` are set, and image locations found (`x` and `y` set on each sprite image).
+     * Note that this *mutates* the AtlasMap.
+     */
+    setMatrices(atlasMap: AtlasMap) {
+        atlasMap.sprites.forEach((s) => {
+            const sw = s.width / atlasMap.width;
+            const sh = s.height / atlasMap.height;
+            s.images.forEach((i) => {
+                i.t = [ // This is the result of short-handed matrix multiplication - a translation then scale
+                    sw, 0, 0,
+                    0, sh, 0,
+                    i.x / atlasMap.width, i.y / atlasMap.height, 1,
+                ];
+            });
+        });
     }
 
     /** Composite loaded sprite data into a new atlas image */
