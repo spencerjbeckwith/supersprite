@@ -496,4 +496,39 @@ describe("Compositor", () => {
         expect(map.sprites[0].images[0].x).toBe(0);
         expect(map.sprites[0].images[0].y).toBe(0);
     });
+
+    it("determines target height based on total area", () => {
+        const c = new Compositor();
+        const t = c.determineTargetHeight([{
+            name: "1",
+            width: 12,
+            height: 4,
+            images: genImages(2),
+        },{
+            name: "2",
+            width: 24,
+            height: 24,
+            images: genImages(1),
+        },{
+            name: "3",
+            width: 4,
+            height: 10,
+            images: genImages(3),
+        }]);
+        expect(t).toBeCloseTo(29);
+    });
+
+    it("determines a target height while mapping", () => {
+        const c = new Compositor();
+        const m = [{
+            name: "1",
+            width: 8,
+            height: 8,
+            images: genImages(4),
+        }];
+        const map = c.map(m);
+        expect(c.targetHeight).toBe(16);
+        expect(map.width).toBe(16);
+        expect(map.height).toBe(16);
+    });
 });

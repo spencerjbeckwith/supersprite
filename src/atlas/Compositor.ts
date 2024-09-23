@@ -47,8 +47,16 @@ export class Compositor {
     /** If this Compositor may print to the console with `Compositor.log()`. Defaults to true. */
     logEnabled: boolean;
 
-    /** The required height of an atlas column before the atlas expands horizontally. Defaults to 512. */
-    targetHeight: number;
+    /**
+     * The required height of an atlas column before the atlas expands horizontally.
+     * 
+     * If not set, a value will be selected which should keep the atlas as relatively square as possible.
+     * This value is selected based on the total anticipated area of all loaded images.
+     * 
+     * Note that this is not a hard limit - images taller than `targetHeight` will still be placed, taking up a full column on their own,
+     * and expanding the new target height to utilize the new, albeit unintentional, real estate.
+     */
+    targetHeight: number | null;
 
     /** 
      * Indicates which areas of the atlas which are already occupied.
@@ -67,7 +75,7 @@ export class Compositor {
      */
     occupied: boolean[][];
 
-    constructor(gatherer?: Gatherer, logEnabled = true, targetHeight = 512) {
+    constructor(gatherer?: Gatherer, logEnabled = true, targetHeight: number | null = null) {
         this.gatherer = gatherer;
         this.granularityX = null;
         this.granularityY = null;
@@ -161,6 +169,21 @@ export class Compositor {
         }
     }
 
+    /** Determines a target height to use for the atlas, using the total area of all images, which should keep the resulting atlas relatively square */
+    determineTargetHeight(sprites: SpriteData[]): number {
+        // This should be the square root of the total area taken by all images
+        // This should get real close most of the time, except in situations where some images are significantly taller than others
+        // But that's not the end of the world - the atlas may just be more rectangular in that case, but at least its space is used as efficiently as possible
+        // (without being an incredibly demanding operation to generate)
+        return Math.ceil(
+            Math.sqrt(
+                sprites.reduce((totalArea, current) => {
+                    return totalArea + (current.width * current.height * current.images.length);
+                }, 0)
+            )
+        );
+    }
+
     /** Determine where in the atlas to place sprites, according to their sizes */
     map(sprites: SpriteData[]): AtlasMap {
         if (this.granularityX === null || this.granularityY === null) {
@@ -180,6 +203,11 @@ export class Compositor {
 
         // Empty our array from the front
         const remaining = [...sprites];
+
+        // Determine our target height, if one wasn't set
+        if (this.targetHeight == null) {
+            this.targetHeight = this.determineTargetHeight(sprites);
+        }
 
         // For every sprite in our list...
         while (remaining.length > 0) {
