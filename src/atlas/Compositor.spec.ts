@@ -2,11 +2,12 @@ import { AtlasMap, Compositor, CompositorError } from "./Compositor";
 import expect from "expect";
 import { Gatherer } from "./gatherers/Gatherer";
 import { SpriteSource } from "./sources/SpriteSource";
-import { SpriteData } from "../types";
+import { Sprite, SpriteData } from "../types";
 import sinon from "sinon";
 import path from "path";
 import Jimp from "jimp";
 import fs from "fs";
+import { FileSystemGatherer } from "./gatherers/FileSystemGatherer";
 
 const temp = ".tmp-Compositor";
 const cleanup = true; // Set to false if you want to view any output files after running tests
@@ -166,10 +167,10 @@ describe("Compositor", () => {
             height: 8,
             images: [],
         }]);
-        expect(result[0].name).toBe("4x4");
-        expect(result[1].name).toBe("8x8");
-        expect(result[2].name).toBe("9x9");
-        expect(result[3].name).toBe("12x12");
+        expect(result[0].name).toBe("12x12");
+        expect(result[1].name).toBe("9x9");
+        expect(result[2].name).toBe("8x8");
+        expect(result[3].name).toBe("4x4");
     });
 
     it("logs to the console if logging is enabled", async () => {
@@ -351,12 +352,77 @@ describe("Compositor", () => {
         });
     });
 
-    it("saves atlas image to the specified path", async () => {
-        const c = new Compositor();
-        const p = path.join(temp, "atlas.png");
-        const j = new Jimp(4, 4, 0);
-        await c.saveAtlas(p, j);
-        expect (fs.existsSync(p)).toBe(true);
+    describe(".saveAtlas()", () => {
+        it("saves atlas image to the specified path", async () => {
+            const c = new Compositor();
+            const p = path.join(temp, "atlas.png");
+            const j = new Jimp(4, 4, 0);
+            await c.saveAtlas(p, j);
+            expect (fs.existsSync(p)).toBe(true);
+        });
+
+        it("adds a .png extension if missing when saving the atlas image", async () => {
+            const c = new Compositor();
+            const p = path.join(temp, "atlas2");
+            const j = new Jimp(4, 4, 0);
+            await c.saveAtlas(p, j);
+            expect(fs.existsSync(p + ".png")).toBe(true);
+        });
+    });
+
+    describe(".saveMap()", () => {
+        it("saves the atlas map to the specified path", async () => {
+            const c = new Compositor();
+            const p = path.join(temp, "map.json");
+            await c.saveMap(p, {
+                width: 4,
+                height: 4,
+                locations: [],
+                sprites: [],
+            });
+            expect(fs.existsSync(p)).toBe(true);
+        });
+
+        it("adds a .json extension if missing when saving the atlas map", async () => {
+            const c = new Compositor();
+            const p = path.join(temp, "map2");
+            await c.saveMap(p, {
+                width: 4,
+                height: 4,
+                locations: [],
+                sprites: [],
+            });
+            expect(fs.existsSync(p + ".json")).toBe(true);
+        });
+
+        it("saves the map JSON using sprite names as object keys", async () => {
+            const c = new Compositor();
+            const p = path.join(temp, "map3.json");
+            await c.saveMap(p, {
+                width: 4,
+                height: 4,
+                locations: [],
+                sprites: [{
+                    name: "spriteName",
+                    width: 1,
+                    height: 2,
+                    images: [{
+                        x: 3,
+                        y: 4,
+                        t: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+                    }],
+                }],
+            });
+
+            // Now read and parse the file
+            const map = JSON.parse(fs.readFileSync(p).toString());
+            expect(map.spriteName).toBeTruthy();
+            expect(map.spriteName.width).toBe(1);
+            expect(map.spriteName.height).toBe(2);
+            expect(map.spriteName.images[0].x).toBe(3);
+            expect(map.spriteName.images[0].y).toBe(4);
+            expect(map.spriteName.images[0].t.length).toBe(9);
+        });
     });
 
     it("sets texture matrices correctly", async () => {
@@ -530,5 +596,79 @@ describe("Compositor", () => {
         expect(c.targetHeight).toBe(16);
         expect(map.width).toBe(16);
         expect(map.height).toBe(16);
+    });
+
+    it("composites a jimp image for the atlas", async () => {
+        const c = new Compositor();
+        const jimp = await c.composite({
+            sprites: [],
+            width: 4,
+            height: 4,
+            locations: [{
+                x: 0,
+                y: 0,
+                image: await new Jimp(2, 2, 0xff0000ff).getBufferAsync(Jimp.MIME_PNG), // 2x2 red
+            },{
+                x: 2,
+                y: 0,
+                image: await new Jimp(2, 2, 0x00ff00ff).getBufferAsync(Jimp.MIME_PNG), // 2x2 green
+            },{
+                x: 0,
+                y: 2,
+                image: await new Jimp(2, 2, 0x0000ffff).getBufferAsync(Jimp.MIME_PNG), // 2x2 blue
+            },{
+                x: 2,
+                y: 2,
+                image: await new Jimp(2, 2, 0xffffffff).getBufferAsync(Jimp.MIME_PNG), // 2x2 white
+            }],
+        });
+        expect(jimp.getPixelColor(1, 1)).toBe(0xff0000ff);
+        expect(jimp.getPixelColor(2, 1)).toBe(0x00ff00ff);
+        expect(jimp.getPixelColor(1, 2)).toBe(0x0000ffff);
+        expect(jimp.getPixelColor(2, 2)).toBe(0xffffffff);
+    });
+
+    it("runs", async () => {
+        // Create a sample directory of Jimp images we'll composite in this test
+        const runPath = path.join(temp, "run");
+        if (!fs.existsSync(runPath)) {
+            fs.mkdirSync(runPath);
+        }
+        const image1 = new Jimp(8, 8, 0xff0000ff); // red
+        const image2 = new Jimp(6, 6, 0x00ff00ff); // blue
+        const image3 = new Jimp(4, 4, 0x0000ffff); // green
+        const image4 = new Jimp(2, 2, 0xffffffff); // white
+        await Promise.all([
+            image1.writeAsync(path.join(runPath, "image1.png")),
+            image2.writeAsync(path.join(runPath, "image2.png")),
+            image3.writeAsync(path.join(runPath, "image3.png")),
+            image4.writeAsync(path.join(runPath, "image4.png")),
+        ]);
+
+        // Now run the Compositor
+        const runAtlas = path.join(temp, "run.png");
+        const runMap = path.join(temp, "run.json");
+        const c = new Compositor(new FileSystemGatherer({
+            directory: runPath,
+            log: false,
+        }));
+        await c.run(runAtlas, runMap);
+
+        // Now ensure what the map describes is accurate to the atlas we output
+        const map = JSON.parse(fs.readFileSync(runMap).toString());
+        const atlas = await Jimp.read(runAtlas);
+        function assertSprite(name: string, color: number, width: number, height: number) {
+            const sprite: Sprite = map[name];
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < height; y++) {
+                    const col = atlas.getPixelColor(sprite.images[0].x + x, sprite.images[0].y + y);
+                    expect(col).toBe(color);
+                }
+            }
+        }
+        assertSprite("image1", 0xff0000ff, 8, 8);
+        assertSprite("image2", 0x00ff00ff, 6, 6);
+        assertSprite("image3", 0x0000ffff, 4, 4);
+        assertSprite("image4", 0xffffffff, 2, 2);
     });
 });

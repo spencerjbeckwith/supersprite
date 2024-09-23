@@ -12,8 +12,6 @@ Remaining v1 tasks:
 Planned features:
 - subdivisor and flexors
 - palette swap on sprite calls
-- sprite-based fonts
-- Loader (provided sprite data, atlas is compiled on the fly)
 
 ===
 

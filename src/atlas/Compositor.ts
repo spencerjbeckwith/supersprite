@@ -1,6 +1,7 @@
 import { Sprite, SpriteData, SpriteImage } from "../types";
 import { Gatherer } from "./gatherers/Gatherer";
 import Jimp from "jimp";
+import fs from "fs/promises";
 
 /** Mapped location on the atlas, used to composite the final image. Does not include any sprite data. */
 export interface AtlasLocation {
@@ -84,6 +85,21 @@ export class Compositor {
         this.occupied = [];
     }
 
+    /** Runs all the components of the Compositor, from loading sprites to outputting the atlas and the atlas map */
+    async run(atlasPath: string, mapPath: string) {
+        const start = Date.now();
+
+        const data = this.sort(await this.load());
+        const map = this.map(data);
+        const atlasImage = await this.composite(map);
+        await Promise.all([
+            this.saveAtlas(atlasPath, atlasImage),
+            this.saveMap(mapPath, map),
+        ]);
+
+        this.log(`done in ${Date.now() - start}ms`);
+    }
+
     /** Load all sprite data from the Gatherer */
     async load(): Promise<SpriteData[]> {
         if (!this.gatherer) {
@@ -110,7 +126,7 @@ export class Compositor {
 
     /** Re-orders an array of SpriteData, placing the largest sprites (in pixel area) first. This ensures the atlas is optimally laid-out. */
     sort(sprites: SpriteData[]): SpriteData[] {
-        return [...sprites].sort((s1, s2) => (s1.width * s1.height) - (s2.width * s2.height));
+        return [...sprites].sort((s1, s2) => (s2.width * s2.height) - (s1.width * s1.height));
     }
 
     /** Returns the start and end indices, inclusive, that should be checked for placing a sprite. */
@@ -268,6 +284,7 @@ export class Compositor {
         // Update our map with our new width/height
         atlasMap.width = this.occupied.length * gx;
         atlasMap.height = Math.max(...this.occupied.map((column) => column.length * gy));
+        this.log(`output size: ${atlasMap.width} x ${atlasMap.height}`);
 
         // Now update our sprite data matrices accounting for atlas width and height
         this.setMatrices(atlasMap);
@@ -298,19 +315,40 @@ export class Compositor {
 
     /** Composite loaded sprite data into a new atlas image */
     async composite(map: AtlasMap): Promise<Jimp> {
-        // TODO
-        throw new CompositorError("Not implemented");
+        const start = Date.now();
+        const atlasImage = new Jimp(map.width, map.height, 0x00000000);
+        await Promise.all(map.locations.map(async (location) => {
+            const image = await Jimp.read(location.image);
+            atlasImage.composite(image, location.x, location.y);
+        }));
+        this.log(`composited ${map.locations.length} locations in ${Date.now() - start}ms`);
+        return atlasImage;
     }
 
     /** Writes a composed atlas to an image file */
     async saveAtlas(path: string, atlas: Jimp) {
+        if (!path.toLowerCase().endsWith(".png")) {
+            path += ".png";
+        }
         await atlas.writeAsync(path);
+        this.log(`output atlas to ${path}`);
     }
 
     /** Writes the atlas map (of sprite data and precomputed texture matrices) to a file */
     async saveMap(path: string, atlas: AtlasMap) {
-        // TODO
-        throw new CompositorError("Not implemented");
+        if (!path.toLowerCase().endsWith(".json")) {
+            path += ".json";
+        }
+        const result: {[name: string]: Sprite} = {};
+        atlas.sprites.forEach((sprite) => {
+            result[sprite.name] = {
+                width: sprite.width,
+                height: sprite.height,
+                images: sprite.images,
+            };
+        });
+        await fs.writeFile(path, JSON.stringify(result));
+        this.log(`output map to ${path}`);
     }
 
     /** Prints a log message about this Compositor, if logging is enabled. Useful to debug subclasses. */
