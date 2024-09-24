@@ -3,7 +3,6 @@
 # TODO: V3
 
 Remaining v1 tasks:
-- Refactor atlas script
 - Write rollup and webpack examples
 - Revise readme
 - Github actions and precommit hooks
