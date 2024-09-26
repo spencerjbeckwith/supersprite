@@ -1,11 +1,11 @@
-# supersprite rollup example
+# supersprite webpack example
 
-This example contains a configuration that compiles a TypeScript project using supersprite to run in the browser using rollup. It showcases many of supersprite's core features.
+This example contains a configuration that compiles a TypeScript project using supersprite to run in the browser using webpack. As opposed to the rollup example, this does not show off any of supersprite's features.
 
 To get this example running locally:
 
 ```
-cd examples/rollup
+cd examples/webpack
 npm install
 npm run build
 npm run serve
