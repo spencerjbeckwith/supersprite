@@ -1,5 +1,5 @@
 import { Core, Transform } from "supersprite";
-import spr from "./atlas";
+import spr from "./sprites.json";
 
 export function globalTransform(core: Core) {
     // The meat of this example happens in index.ts, with the call to `endRender()`.

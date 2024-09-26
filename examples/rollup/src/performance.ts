@@ -1,5 +1,5 @@
 import { Core } from "supersprite";
-import spr from "./atlas";
+import spr from "./sprites.json";
 
 // Around ~10000 sprites is when things begin to slow down, but this likely depends on hardware
 // Even including a tileset, most low-res games probably won't even get to 1000 sprites

@@ -1,5 +1,5 @@
 import { Colors, Core, Transform } from "supersprite";
-import spr from "./atlas";
+import spr from "./sprites.json";
 
 export function sprites(core: Core) {
     core.draw.textWrap("supersprite can draw sprites in a number of ways: individual images, animated, transformed, contorted, or blended", 10, 10, 280, {

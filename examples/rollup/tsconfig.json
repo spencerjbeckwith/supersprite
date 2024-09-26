@@ -4,6 +4,7 @@
     "module": "esnext",
     "esModuleInterop": true,
     "moduleResolution": "node",
+    "resolveJsonModule": true,
     "paths": {
       "tslib": ["./node_modules/tslib/tslib.d.ts"]
     }

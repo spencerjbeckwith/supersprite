@@ -19,11 +19,7 @@ export interface SpriteImage {
     y: number;
 
     /** Pre-computed texture matrix that transforms the unit quad into clipspace to select this image from the atlas texture */
-    t: [
-        number, number, number,
-        number, number, number,
-        number, number, number
-    ];
+    t: number[];
 }
 
 /** Loaded data of a sprite used to compile the atlas texture */
