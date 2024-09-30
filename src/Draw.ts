@@ -2,7 +2,7 @@ import { Color } from "./util/Color";
 import { Shader } from "./Shader";
 import { Timer } from "./util/Timer";
 import { Transform } from "./util/Transform";
-import { Sprite, SpriteImage } from "./types";
+import { Sprite } from "./types";
 
 export type GLDrawModes =
     | "POINTS"
