@@ -1,0 +1,23 @@
+{
+  "name": "supersprite-example-webpack",
+  "version": "1.0.0",
+  "description": "Example using supersprite with webpack",
+  "private": true,
+  "scripts": {
+    "build": "npx supersprite -d ../rollup/assets -m src/sprites.json && webpack",
+    "refresh": "cd ../.. && npm run build && cd examples/webpack && npm install && npm run build",
+    "serve": "npx serve"
+  },
+  "author": "Spencer Beckwith",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.2",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "supersprite": "file:../.."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "supersprite-example-rollup",
+  "version": "1.0.0",
+  "description": "Example using supersprite with rollup",
+  "private": true,
+  "scripts": {
+    "build": "npx supersprite -d assets -m src/sprites.json && rollup -c rollup.config.js",
+    "refresh": "cd ../.. && npm run build && cd examples/rollup && npm install ../.. && npm run build",
+    "serve": "npx serve"
+  },
+  "author": "Spencer Beckwith",
+  "license": "MIT",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^4.20.0",
+    "serve": "^6.5.8",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "supersprite": "file:../.."
+  }
+}

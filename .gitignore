@@ -1,2 +1,6 @@
 node_modules/
-supersprite.json
+dist/
+src-v2/
+.nyc_output/
+.tmp/
+.tmp-*/
