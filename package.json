@@ -3,7 +3,9 @@
   "version": "3.0.0",
   "description": "",
   "main": "dist/index.js",
-  "bin": "./dist/atlas/bin.js",
+  "bin": {
+    "supersprite": "dist/atlas/bin.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/spencerjbeckwith/supersprite.git"
