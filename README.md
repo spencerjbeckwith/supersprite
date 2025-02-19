@@ -1,7 +1,5 @@
 # supersprite
 
-===
-
 supersprite is a sprite drawing engine for 2D browser games meant to simplify the process of setting up WebGL2. supersprite provides a fast, powerful, and intuitive drawing system that is made possible by WebGL, while still keeping the simplicity of singular and abstracted draw calls.
 
 ```javascript
@@ -123,7 +121,7 @@ function main() {
 main();
 ```
 
-The names of each sprite are determined by their *file* or *folder* name when the atlas is compiled. This is mean to be more useful for Intellisense/autocomplete versus using the map as an `any` type.
+The names of each sprite are determined by their *file* or *folder* name when the atlas is compiled. This is meant to be more useful for Intellisense/autocomplete versus using the map as an `any` type.
 
 ### Presenter Options
 

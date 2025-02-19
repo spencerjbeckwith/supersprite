@@ -44,6 +44,7 @@ describe("Shader", () => {
 
     it("throws if the shader program cannot be created", () => {
         const s = sinon.stub(gl, "createProgram");
+        // @ts-ignore
         s.returns(null);
         expect(() => {
             new Shader(gl);
@@ -62,6 +63,7 @@ describe("Shader", () => {
 
     it("throws if buffers cannot be created", () => {
         const s = sinon.stub(gl, "createBuffer");
+        // @ts-ignore
         s.returns(null);
         expect(() => {
             new Shader(gl);
@@ -80,6 +82,7 @@ describe("Shader", () => {
 
     it("throws if vertex array cannot be created", () => {
         const s = sinon.stub(gl, "createVertexArray");
+        // @ts-ignore
         s.returns(null);
         expect(() => {
             new Shader(gl);

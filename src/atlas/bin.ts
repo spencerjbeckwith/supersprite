@@ -22,7 +22,7 @@ program
     .option("-a, --atlas [path]", "output png file for the atlas", "atlas.png")
     .option("-m, --map [map]", "output json file for the atlas map", "map.json")
     .option("-s, --silent", "suppress output")
-    .option("-th, --height", "target atlas height, if desired");
+    .option("-t, --height", "target atlas height, if desired");
 
 program.parse();
 const options = program.opts();
